@@ -38,6 +38,32 @@ const i18n = {
     helpNet: 'Error de red al grabar',
     helpTTS: 'No oigo el audio',
     helpSys: 'Micrófono bloqueado por el sistema',
+    // Home / landing
+    back: 'Inicio',
+    homeLead: 'Elige el modo de práctica que mejor se adapte a lo que quieres hacer hoy.',
+    cardTagRecommended: 'Recomendado',
+    cardTagCustom: 'Personalizado',
+    cardTagQuick: 'Rápido',
+    cardPresetTitle: 'Frases predefinidas',
+    cardPresetDesc: 'Practica con las 20 preguntas oficiales del speaking de la academia: armas, delitos, descripción, etc. Incluye respuesta modelo y traducción.',
+    cardPresetF1: '✓ 20 preguntas tipo examen',
+    cardPresetF2: '✓ Respuestas modelo en inglés',
+    cardPresetF3: '✓ Traducción al español',
+    cardFreeTitle: 'Speaking libre',
+    cardFreeDesc: '¿Tienes tu propia pregunta y respuesta? Escríbelas y practica como si fuera un examen real. Ideal para repasar tus apuntes.',
+    cardFreeF1: '✓ Tu pregunta, tu respuesta',
+    cardFreeF2: '✓ Mismo sistema de evaluación',
+    cardFreeF3: '✓ Practica cualquier tema',
+    cardPronTitle: 'Pronunciación',
+    cardPronDesc: '¿No sabes pronunciar una palabra o frase? Escríbela y te enseñamos cómo decirla con una guía fácil de leer.',
+    cardPronF1: '✓ Cualquier palabra o frase',
+    cardPronF2: '✓ Guía de pronunciación fácil',
+    cardPronF3: '✓ Practica y verifica tu acento',
+    homeTipTitle: 'Primer uso. ',
+    homeTipText: 'Recuerda permitir el acceso al micrófono cuando lo pida tu navegador para poder grabar tu voz y obtener feedback de pronunciación.',
+    modePresetShort: 'Predefinidas',
+    modeFreeShort: 'Libre',
+    modePronShort: 'Pronunciación',
     footer: 'Desarrollado por el alumno',
     progressLabel: (a, b) => `Pregunta ${a} de ${b}`,
     questionLabel: n => `PREGUNTA ${n}`,
@@ -112,6 +138,32 @@ const i18n = {
     helpNet: 'Network error when recording',
     helpTTS: 'I cannot hear the audio',
     helpSys: 'Microphone blocked by the system',
+    // Home / landing
+    back: 'Home',
+    homeLead: 'Choose the practice mode that best fits what you want to do today.',
+    cardTagRecommended: 'Recommended',
+    cardTagCustom: 'Custom',
+    cardTagQuick: 'Quick',
+    cardPresetTitle: 'Preset Questions',
+    cardPresetDesc: 'Practise with the 20 official academy speaking questions: weapons, crime, description, etc. Includes model answer and translation.',
+    cardPresetF1: '✓ 20 exam-style questions',
+    cardPresetF2: '✓ Model answers in English',
+    cardPresetF3: '✓ Spanish translation',
+    cardFreeTitle: 'Free Speaking',
+    cardFreeDesc: 'Have your own question and answer? Type them and practise like a real exam. Perfect to review your notes.',
+    cardFreeF1: '✓ Your question, your answer',
+    cardFreeF2: '✓ Same evaluation system',
+    cardFreeF3: '✓ Practise any topic',
+    cardPronTitle: 'Pronunciation',
+    cardPronDesc: "Don't know how to pronounce a word or sentence? Type it and we will show you how to say it with an easy-to-read guide.",
+    cardPronF1: '✓ Any word or sentence',
+    cardPronF2: '✓ Easy pronunciation guide',
+    cardPronF3: '✓ Practise and check your accent',
+    homeTipTitle: 'First time? ',
+    homeTipText: 'Remember to allow microphone access when your browser asks for it, so you can record your voice and get pronunciation feedback.',
+    modePresetShort: 'Preset',
+    modeFreeShort: 'Free',
+    modePronShort: 'Pronunciation',
     footer: 'Developed by student',
     progressLabel: (a, b) => `Question ${a} of ${b}`,
     questionLabel: n => `QUESTION ${n}`,
@@ -1026,7 +1078,7 @@ function showComparison(transcript) {
 // ════════════════════════════════════════════════════════
 //  MODE SWITCHING
 // ════════════════════════════════════════════════════════
-let currentMode = 'preset';
+let currentMode = 'home';
 
 function setMode(mode) {
   currentMode = mode;
@@ -1037,16 +1089,31 @@ function setMode(mode) {
   if (typeof resetFreeRecording === 'function') resetFreeRecording();
   if (typeof resetPronRecording === 'function') resetPronRecording();
 
-  // Update tabs
-  document.querySelectorAll('.mode-tab').forEach(b =>
-    b.classList.toggle('active', b.dataset.mode === mode)
-  );
-
-  // Update sections
-  document.querySelectorAll('.mode-section').forEach(s => s.classList.remove('active'));
+  // Update sections — hide all, show only the one we want
+  document.querySelectorAll('.mode-section').forEach(function(s) { s.classList.remove('active'); });
+  if (mode === 'home')          $('modeHome').classList.add('active');
   if (mode === 'preset')        $('modePreset').classList.add('active');
   if (mode === 'free')          $('modeFree').classList.add('active');
   if (mode === 'pronunciation') $('modePronunciation').classList.add('active');
+
+  // Show/hide the active-mode bar (back button + mini tabs) and speed
+  const bar = $('activeModeBar');
+  const speedRow = $('speedRow');
+  if (mode === 'home') {
+    bar.style.display = 'none';
+    speedRow.style.display = 'none';
+  } else {
+    bar.style.display = 'flex';
+    speedRow.style.display = 'flex';
+  }
+
+  // Update mini tabs to highlight current mode
+  document.querySelectorAll('.mode-mini-tab').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+
+  // Scroll to top when switching modes
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 

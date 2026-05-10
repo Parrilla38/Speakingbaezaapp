@@ -26,24 +26,83 @@
   <!-- COMPATIBILITY BANNER (only shown when SR isn't supported) -->
   <div class="compat-banner" id="compatBanner" style="display:none"></div>
 
-  <!-- MODE TABS -->
-  <nav class="mode-tabs">
-    <button class="mode-tab active" data-mode="preset" onclick="setMode('preset')">
-      <span class="mode-icon">📜</span>
-      <span data-i18n="modePreset">Frases predefinidas</span>
-    </button>
-    <button class="mode-tab" data-mode="free" onclick="setMode('free')">
-      <span class="mode-icon">✍️</span>
-      <span data-i18n="modeFree">Speaking libre</span>
-    </button>
-    <button class="mode-tab" data-mode="pronunciation" onclick="setMode('pronunciation')">
-      <span class="mode-icon">🗣️</span>
-      <span data-i18n="modePron">Pronunciación</span>
-    </button>
-  </nav>
+  <!-- ─────────────────  HOME (landing) ───────────────── -->
+  <section class="mode-section active" id="modeHome">
+    <div class="home-intro">
+      <p class="home-lead" data-i18n="homeLead">Elige el modo de práctica que mejor se adapte a lo que quieres hacer hoy.</p>
+    </div>
 
-  <!-- SPEED -->
-  <div class="settings-row">
+    <div class="home-cards">
+      <button class="home-card" onclick="setMode('preset')">
+        <div class="home-card-glyph">📜</div>
+        <div class="home-card-content">
+          <div class="home-card-tag" data-i18n="cardTagRecommended">Recomendado</div>
+          <h2 class="home-card-title" data-i18n="cardPresetTitle">Frases predefinidas</h2>
+          <p class="home-card-desc" data-i18n="cardPresetDesc">Practica con las 20 preguntas oficiales del speaking de la academia: armas, delitos, descripción, etc. Incluye respuesta modelo y traducción.</p>
+          <ul class="home-card-features">
+            <li data-i18n="cardPresetF1">✓ 20 preguntas tipo examen</li>
+            <li data-i18n="cardPresetF2">✓ Respuestas modelo en inglés</li>
+            <li data-i18n="cardPresetF3">✓ Traducción al español</li>
+          </ul>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </button>
+
+      <button class="home-card" onclick="setMode('free')">
+        <div class="home-card-glyph">✍️</div>
+        <div class="home-card-content">
+          <div class="home-card-tag tag-yours" data-i18n="cardTagCustom">Personalizado</div>
+          <h2 class="home-card-title" data-i18n="cardFreeTitle">Speaking libre</h2>
+          <p class="home-card-desc" data-i18n="cardFreeDesc">¿Tienes tu propia pregunta y respuesta? Escríbelas y practica como si fuera un examen real. Ideal para repasar tus apuntes.</p>
+          <ul class="home-card-features">
+            <li data-i18n="cardFreeF1">✓ Tu pregunta, tu respuesta</li>
+            <li data-i18n="cardFreeF2">✓ Mismo sistema de evaluación</li>
+            <li data-i18n="cardFreeF3">✓ Practica cualquier tema</li>
+          </ul>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </button>
+
+      <button class="home-card" onclick="setMode('pronunciation')">
+        <div class="home-card-glyph">🗣️</div>
+        <div class="home-card-content">
+          <div class="home-card-tag tag-quick" data-i18n="cardTagQuick">Rápido</div>
+          <h2 class="home-card-title" data-i18n="cardPronTitle">Pronunciación</h2>
+          <p class="home-card-desc" data-i18n="cardPronDesc">¿No sabes pronunciar una palabra o frase? Escríbela y te enseñamos cómo decirla con una guía fácil de leer.</p>
+          <ul class="home-card-features">
+            <li data-i18n="cardPronF1">✓ Cualquier palabra o frase</li>
+            <li data-i18n="cardPronF2">✓ Guía de pronunciación fácil</li>
+            <li data-i18n="cardPronF3">✓ Practica y verifica tu acento</li>
+          </ul>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </button>
+    </div>
+
+    <div class="home-tip">
+      <div class="home-tip-icon">💡</div>
+      <div>
+        <strong data-i18n="homeTipTitle">Primer uso</strong>
+        <span data-i18n="homeTipText">Recuerda permitir el acceso al micrófono cuando lo pida tu navegador para poder grabar tu voz y obtener feedback de pronunciación.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────  ACTIVE MODE BAR (back + tabs)  ───────────────── -->
+  <div class="active-mode-bar" id="activeModeBar" style="display:none">
+    <button class="back-btn" onclick="setMode('home')" aria-label="Volver al inicio">
+      <span class="back-arrow">←</span>
+      <span data-i18n="back">Inicio</span>
+    </button>
+    <div class="mode-mini-tabs">
+      <button class="mode-mini-tab" data-mode="preset" onclick="setMode('preset')" data-i18n="modePresetShort">Predefinidas</button>
+      <button class="mode-mini-tab" data-mode="free" onclick="setMode('free')" data-i18n="modeFreeShort">Libre</button>
+      <button class="mode-mini-tab" data-mode="pronunciation" onclick="setMode('pronunciation')" data-i18n="modePronShort">Pronunciación</button>
+    </div>
+  </div>
+
+  <!-- SPEED (only shown when inside a mode) -->
+  <div class="settings-row" id="speedRow" style="display:none">
     <span class="settings-label" data-i18n="speed">Velocidad:</span>
     <button class="speed-btn" data-rate="0.75" onclick="setSpeed(0.75)" data-i18n="slow">Lenta</button>
     <button class="speed-btn active" data-rate="1.0"  onclick="setSpeed(1.0)"  data-i18n="normal">Normal</button>
@@ -51,7 +110,7 @@
   </div>
 
   <!-- ─────────────────  MODE: PRESET  ───────────────── -->
-  <section class="mode-section active" id="modePreset">
+  <section class="mode-section" id="modePreset">
 
   <!-- PROGRESS -->
   <div class="progress-wrap">
