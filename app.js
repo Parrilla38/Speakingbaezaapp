@@ -30,6 +30,14 @@ const i18n = {
     micText: 'Para grabar tu respuesta y comprobar tu pronunciación necesitamos acceso al micrófono. Tu voz nunca se almacena.',
     micTextIOS: 'En iPhone/iPad pulsa "Permitir" y acepta el aviso del sistema. Si lo denegaste antes: Ajustes → Safari → Micrófono y actívalo para este sitio.',
     cancel: 'Cancelar', allow: 'Permitir',
+    understood: 'Entendido',
+    helpTitle: 'Ayuda y solución de problemas',
+    helpLead: 'Selecciona el problema que tienes:',
+    helpMic: 'El micrófono no funciona',
+    helpSR: 'No se transcribe mi voz',
+    helpNet: 'Error de red al grabar',
+    helpTTS: 'No oigo el audio',
+    helpSys: 'Micrófono bloqueado por el sistema',
     footer: 'Desarrollado por el alumno',
     progressLabel: (a, b) => `Pregunta ${a} de ${b}`,
     questionLabel: n => `PREGUNTA ${n}`,
@@ -96,6 +104,14 @@ const i18n = {
     micText: 'To record your answer and check your pronunciation, this app needs microphone access. Your voice is never stored.',
     micTextIOS: 'On iPhone/iPad tap "Allow" and accept the iOS prompt. If denied: Settings → Safari → Microphone and enable it for this site.',
     cancel: 'Cancel', allow: 'Allow',
+    understood: 'Got it',
+    helpTitle: 'Help & troubleshooting',
+    helpLead: 'Select the problem you are having:',
+    helpMic: 'The microphone is not working',
+    helpSR: 'My voice is not being transcribed',
+    helpNet: 'Network error when recording',
+    helpTTS: 'I cannot hear the audio',
+    helpSys: 'Microphone blocked by the system',
     footer: 'Developed by student',
     progressLabel: (a, b) => `Question ${a} of ${b}`,
     questionLabel: n => `QUESTION ${n}`,
@@ -364,9 +380,7 @@ function stopSpeaking() {
 
 function speak(text, btn) {
   if (!TTS_SUPPORTED) {
-    alert(lang === 'es'
-      ? 'Tu navegador no soporta síntesis de voz. Prueba Chrome, Edge o Safari.'
-      : 'Your browser does not support speech synthesis. Try Chrome, Edge or Safari.');
+    showErrorHelp('tts-not-supported');
     return;
   }
   stopSpeaking();
@@ -523,6 +537,209 @@ function restart() {
   loadQuestion();
 }
 
+// ── ERROR HELP SYSTEM ──────────────────────────────────
+// Maps error codes to detailed, actionable instructions per browser/OS
+
+const ERROR_HELP = {
+  es: {
+    'mic-not-allowed': {
+      title: '🚫 Permiso de micrófono denegado',
+      lead: 'Tu navegador no tiene permiso para usar el micrófono. Sigue los pasos de tu navegador:',
+      steps: {
+        chrome:  ['Pulsa el icono 🔒 (candado) en la barra de direcciones', 'Selecciona "Configuración del sitio"', 'Cambia "Micrófono" a "Permitir"', 'Recarga la página y vuelve a intentarlo'],
+        edge:    ['Pulsa el icono 🔒 en la barra de direcciones', 'Pulsa "Permisos de este sitio"', 'Cambia "Micrófono" a "Permitir"', 'Recarga la página'],
+        firefox: ['Pulsa el icono 🔒 en la barra de direcciones', 'Pulsa la "x" junto a "Bloqueado temporalmente" en Micrófono', 'Recarga la página y permite el acceso esta vez'],
+        safari:  ['Abre el menú Safari → Ajustes → Sitios web', 'En la barra lateral selecciona "Micrófono"', 'Cambia el permiso de este sitio a "Permitir"', 'Recarga la página'],
+        ios:     ['Abre Ajustes del iPhone/iPad', 'Pulsa Safari → Cámara o Micrófono', 'Asegúrate de que está en "Preguntar" o "Permitir"', 'Vuelve a la página y recarga (tira hacia abajo)'],
+        android: ['Mantén pulsado el icono de Chrome', 'Pulsa "Información de la aplicación" → "Permisos"', 'Activa "Micrófono"', 'Vuelve a la página y recarga'],
+        brave:   ['Pulsa el icono del escudo 🦁 en la barra de direcciones', 'Desactiva "Bloquear scripts" para este sitio', 'Recarga la página', 'Acepta el permiso de micrófono cuando lo pida'],
+        default: ['Busca el icono de candado en la barra de direcciones', 'Permite el micrófono para este sitio', 'Recarga la página']
+      }
+    },
+    'mic-blocked-system': {
+      title: '🔒 Micrófono bloqueado por el sistema',
+      lead: 'El sistema operativo no permite que el navegador use el micrófono:',
+      steps: {
+        ios:     ['Ajustes → Privacidad y seguridad → Micrófono', 'Activa el interruptor para Safari/Chrome', 'Vuelve a la app y recarga'],
+        android: ['Ajustes → Aplicaciones → tu navegador', 'Permisos → Micrófono → Permitir', 'Vuelve a la app y recarga'],
+        default: ['Ajustes del sistema → Privacidad → Micrófono', 'Permite el acceso a tu navegador', 'Recarga la página']
+      }
+    },
+    'sr-not-supported': {
+      title: '❌ Reconocimiento de voz no disponible',
+      lead: 'Tu navegador actual no soporta el reconocimiento de voz. Esta función requiere un navegador compatible:',
+      steps: {
+        firefox: ['Firefox no soporta el reconocimiento de voz aún', 'Para grabar tu voz, abre la página en <strong>Chrome</strong>, <strong>Edge</strong> o <strong>Safari</strong>', 'El resto de funciones (escuchar, traducir) sí funcionan en Firefox'],
+        brave:   ['Brave bloquea el reconocimiento de voz por privacidad', 'Pulsa el escudo 🦁 → desactiva "Bloquear scripts"', 'O abre la página en <strong>Chrome</strong> o <strong>Edge</strong>'],
+        default: ['Abre esta página en <strong>Chrome</strong>, <strong>Edge</strong> o <strong>Safari</strong>', 'En móvil, Chrome para Android o Safari iOS funcionan perfectamente']
+      }
+    },
+    'sr-network': {
+      title: '📡 Error de red en el reconocimiento de voz',
+      lead: 'El reconocimiento de voz necesita conexión a Internet con acceso a los servidores de voz. Esto suele fallar en redes corporativas (academias, hospitales, etc.) que bloquean ciertas APIs:',
+      steps: {
+        default: [
+          'Comprueba que tienes conexión a Internet',
+          'Si estás en un <strong>WiFi corporativo</strong> (academia, oficina, hospital): el firewall puede estar bloqueando los servidores de voz de Google',
+          'Solución: conecta el móvil a tu red de datos y haz <em>tethering</em> al dispositivo',
+          'Otra opción: usar la app fuera de la red corporativa'
+        ]
+      }
+    },
+    'sr-no-speech': {
+      title: '🔇 No se detectó voz',
+      lead: 'No se ha detectado ningún sonido durante la grabación:',
+      steps: {
+        default: [
+          'Asegúrate de hablar lo suficientemente alto y claro',
+          'Acércate más al micrófono (a 20–30 cm)',
+          'Comprueba que el micrófono no esté silenciado físicamente',
+          'En portátiles, comprueba que has elegido el micrófono correcto en los ajustes',
+          'Inténtalo de nuevo'
+        ]
+      }
+    },
+    'tts-not-supported': {
+      title: '🔊 Síntesis de voz no disponible',
+      lead: 'Tu navegador no puede reproducir audio TTS:',
+      steps: {
+        default: ['Abre la página en <strong>Chrome</strong>, <strong>Edge</strong>, <strong>Safari</strong> o <strong>Firefox</strong>', 'Si ya estás usando uno de esos, recarga la página']
+      }
+    },
+    'media-not-supported': {
+      title: '⚠️ Acceso a medios no disponible',
+      lead: 'Tu navegador no soporta el acceso a la cámara/micrófono. Esto suele ocurrir cuando:',
+      steps: {
+        default: [
+          'Estás abriendo el archivo localmente (file://) en lugar de un servidor — necesitas <strong>HTTPS</strong>',
+          'Tu navegador es muy antiguo — actualízalo',
+          'Estás en modo incógnito con permisos restrictivos',
+          'Solución: abre la página desde su URL pública (https://...)'
+        ]
+      }
+    }
+  },
+
+  en: {
+    'mic-not-allowed': {
+      title: '🚫 Microphone permission denied',
+      lead: 'Your browser is not allowed to use the microphone. Follow the steps for your browser:',
+      steps: {
+        chrome:  ['Click the 🔒 (lock) icon in the address bar', 'Select "Site settings"', 'Set "Microphone" to "Allow"', 'Reload the page and try again'],
+        edge:    ['Click the 🔒 icon in the address bar', 'Click "Permissions for this site"', 'Set "Microphone" to "Allow"', 'Reload the page'],
+        firefox: ['Click the 🔒 icon in the address bar', 'Click the "x" next to "Temporarily blocked" for Microphone', 'Reload the page and allow this time'],
+        safari:  ['Open Safari menu → Settings → Websites', 'Select "Microphone" in the sidebar', 'Change permission for this site to "Allow"', 'Reload the page'],
+        ios:     ['Open iPhone/iPad Settings', 'Tap Safari → Camera or Microphone', 'Make sure it is set to "Ask" or "Allow"', 'Return to the page and pull down to reload'],
+        android: ['Long-press the Chrome icon', 'Tap "App info" → "Permissions"', 'Enable "Microphone"', 'Return to the page and reload'],
+        brave:   ['Click the shield icon 🦁 in the address bar', 'Disable "Block Scripts" for this site', 'Reload the page', 'Accept the microphone permission when asked'],
+        default: ['Look for the lock icon in the address bar', 'Allow microphone for this site', 'Reload the page']
+      }
+    },
+    'mic-blocked-system': {
+      title: '🔒 Microphone blocked by system',
+      lead: 'The operating system is preventing the browser from using the microphone:',
+      steps: {
+        ios:     ['Settings → Privacy & Security → Microphone', 'Enable the toggle for Safari/Chrome', 'Return to the app and reload'],
+        android: ['Settings → Apps → your browser', 'Permissions → Microphone → Allow', 'Return to the app and reload'],
+        default: ['System Settings → Privacy → Microphone', 'Allow access to your browser', 'Reload the page']
+      }
+    },
+    'sr-not-supported': {
+      title: '❌ Speech recognition not available',
+      lead: 'Your current browser does not support speech recognition. This feature requires a compatible browser:',
+      steps: {
+        firefox: ['Firefox does not yet support speech recognition', 'To record your voice, open the page in <strong>Chrome</strong>, <strong>Edge</strong> or <strong>Safari</strong>', 'All other features (listening, translation) still work in Firefox'],
+        brave:   ['Brave blocks speech recognition for privacy', 'Click the shield 🦁 → disable "Block Scripts"', 'Or open the page in <strong>Chrome</strong> or <strong>Edge</strong>'],
+        default: ['Open this page in <strong>Chrome</strong>, <strong>Edge</strong> or <strong>Safari</strong>', 'On mobile, Chrome for Android or Safari on iOS work perfectly']
+      }
+    },
+    'sr-network': {
+      title: '📡 Speech recognition network error',
+      lead: 'Speech recognition needs internet access to voice servers. This often fails on corporate networks (academies, hospitals, etc.) that block certain APIs:',
+      steps: {
+        default: [
+          'Check that you have internet connection',
+          'If you are on a <strong>corporate WiFi</strong> (academy, office, hospital): the firewall may be blocking Google voice servers',
+          'Solution: connect your phone to mobile data and tether the device',
+          'Another option: use the app outside the corporate network'
+        ]
+      }
+    },
+    'sr-no-speech': {
+      title: '🔇 No speech detected',
+      lead: 'No sound was detected during recording:',
+      steps: {
+        default: [
+          'Make sure you speak loud and clear enough',
+          'Move closer to the microphone (20–30 cm away)',
+          'Check that the microphone is not physically muted',
+          'On laptops, check that you have selected the correct microphone in settings',
+          'Try again'
+        ]
+      }
+    },
+    'tts-not-supported': {
+      title: '🔊 Text-to-speech not available',
+      lead: 'Your browser cannot play TTS audio:',
+      steps: {
+        default: ['Open the page in <strong>Chrome</strong>, <strong>Edge</strong>, <strong>Safari</strong> or <strong>Firefox</strong>', 'If you are already using one of those, reload the page']
+      }
+    },
+    'media-not-supported': {
+      title: '⚠️ Media access not available',
+      lead: 'Your browser does not support camera/microphone access. This usually happens when:',
+      steps: {
+        default: [
+          'You are opening the file locally (file://) instead of a server — you need <strong>HTTPS</strong>',
+          'Your browser is too old — update it',
+          'You are in incognito mode with restrictive permissions',
+          'Solution: open the page from its public URL (https://...)'
+        ]
+      }
+    }
+  }
+};
+
+function getBrowserKey() {
+  if (isIOS && (isSafari || isChrome)) return 'ios';
+  if (isAndroid) return 'android';
+  if (isBrave)   return 'brave';
+  if (isEdge)    return 'edge';
+  if (isFirefox) return 'firefox';
+  if (isSafari)  return 'safari';
+  if (isChrome)  return 'chrome';
+  return 'default';
+}
+
+function showErrorHelp(errorKey) {
+  const data = (ERROR_HELP[lang] && ERROR_HELP[lang][errorKey]) || ERROR_HELP.en[errorKey];
+  if (!data) return;
+
+  const browserKey = getBrowserKey();
+  const steps = data.steps[browserKey] || data.steps.default || data.steps.chrome;
+  const browserName = getBrowserName();
+
+  $('errorTitle').textContent = data.title;
+  $('errorBrowser').textContent = `${lang === 'es' ? 'Detectado' : 'Detected'}: ${browserName}`;
+  $('errorLead').innerHTML = data.lead;
+  $('errorSteps').innerHTML = steps.map((s, i) =>
+    `<li><span class="step-num">${i + 1}</span><span class="step-text">${s}</span></li>`
+  ).join('');
+
+  $('errorModal').classList.add('visible');
+}
+
+function closeErrorModal() {
+  $('errorModal').classList.remove('visible');
+}
+
+function showHelpMenu() {
+  $('helpMenuModal').classList.add('visible');
+}
+function closeHelpMenu() {
+  $('helpMenuModal').classList.remove('visible');
+}
+
 // ── BROWSER DETECTION & FEATURE SUPPORT ────────────────
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const ua = navigator.userAgent;
@@ -537,7 +754,7 @@ const isChrome  = /Chrome/i.test(ua) && !isEdge && !isOpera;
 // Brave detection: only async via navigator.brave.isBrave()
 let isBrave = false;
 if (navigator.brave && typeof navigator.brave.isBrave === 'function') {
-  navigator.brave.isBrave().then(v => { isBrave = !!v; checkSpeechRecognitionSupport(); }).catch(() => {});
+  navigator.brave.isBrave().then(function(v) { isBrave = !!v; checkSpeechRecognitionSupport(); }).catch(function() {});
 }
 
 function getBrowserName() {
@@ -547,36 +764,44 @@ function getBrowserName() {
   if (isFirefox) return 'Firefox';
   if (isSafari)  return 'Safari';
   if (isChrome)  return 'Chrome';
-  return 'tu navegador';
+  return lang === 'es' ? 'tu navegador' : 'your browser';
 }
 
 // Show a non-blocking banner when speech recognition isn't available
 function checkSpeechRecognitionSupport() {
   if (SR && !isFirefox && !isBrave) return; // works fine
 
-  const browser = getBrowserName();
   const banner = document.getElementById('compatBanner');
   if (!banner) return;
 
-  let msg;
+  let msg, errKey;
   if (isFirefox) {
+    errKey = 'sr-not-supported';
     msg = lang === 'es'
-      ? `⚠️ <strong>Firefox</strong> no soporta el reconocimiento de voz aún. Las grabaciones no podrán transcribirse. Para grabar tu voz usa <strong>Chrome, Edge o Safari</strong>. El resto de funciones (escuchar, traducir, etc.) sí funcionan.`
-      : `⚠️ <strong>Firefox</strong> does not yet support speech recognition. Recordings cannot be transcribed. To record your voice please use <strong>Chrome, Edge or Safari</strong>. All other features work fine.`;
+      ? `⚠️ <strong>Firefox</strong> no soporta el reconocimiento de voz. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">Ver soluciones</button>`
+      : `⚠️ <strong>Firefox</strong> does not support speech recognition. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">See solutions</button>`;
   } else if (isBrave) {
+    errKey = 'sr-not-supported';
     msg = lang === 'es'
-      ? `⚠️ <strong>Brave</strong> bloquea el reconocimiento de voz por defecto. Para activarlo: pulsa el icono del escudo y desactiva "Bloquear scripts" en este sitio. O usa <strong>Chrome o Edge</strong>.`
-      : `⚠️ <strong>Brave</strong> blocks speech recognition by default. To enable it, click the shield icon and disable "Block Scripts" for this site. Or use <strong>Chrome or Edge</strong>.`;
+      ? `⚠️ <strong>Brave</strong> bloquea el reconocimiento de voz. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">Cómo activarlo</button>`
+      : `⚠️ <strong>Brave</strong> blocks speech recognition. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">How to enable it</button>`;
   } else if (!SR) {
+    errKey = 'sr-not-supported';
     msg = lang === 'es'
-      ? `⚠️ ${browser} no soporta el reconocimiento de voz. El resto de funciones funcionan, pero las grabaciones no se transcribirán.`
-      : `⚠️ ${browser} does not support speech recognition. All other features work, but recordings won't be transcribed.`;
+      ? `⚠️ Tu navegador no soporta reconocimiento de voz. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">Ver soluciones</button>`
+      : `⚠️ Your browser does not support speech recognition. <button class="banner-link" onclick="showErrorHelp('sr-not-supported')">See solutions</button>`;
   }
 
   if (msg) {
     banner.innerHTML = msg + ' <button class="banner-close" onclick="this.parentElement.style.display=\'none\'">×</button>';
     banner.style.display = 'block';
   }
+}
+
+// Helper: render error message with a "Ver solución" / "See solution" link
+function errorWithHelp(message, errorKey) {
+  const linkLabel = lang === 'es' ? 'Ver solución' : 'See solution';
+  return `${message} <button class="error-help-btn" onclick="showErrorHelp('${errorKey}')">❓ ${linkLabel}</button>`;
 }
 
 let recognition  = null;
@@ -613,11 +838,22 @@ function buildRecognition() {
     if (e.error === 'aborted') return;
     isRecording = false;
     setBtnStopped();
-    let msg = '❌ ' + e.error;
-    if (e.error === 'not-allowed')       msg = isIOS ? T('micDeniedIOS') : T('micDenied');
-    if (e.error === 'network')           msg = T('networkError');
-    if (e.error === 'service-not-allowed') msg = T('notSupported');
-    $('youSaid').textContent = msg;
+
+    let msg, errKey;
+    if (e.error === 'not-allowed') {
+      msg = isIOS ? T('micDeniedIOS') : T('micDenied');
+      errKey = 'mic-not-allowed';
+    } else if (e.error === 'network') {
+      msg = T('networkError');
+      errKey = 'sr-network';
+    } else if (e.error === 'service-not-allowed') {
+      msg = T('notSupported');
+      errKey = 'sr-not-supported';
+    } else {
+      msg = '❌ ' + e.error;
+      errKey = 'sr-not-supported';
+    }
+    $('youSaid').innerHTML = errorWithHelp(msg, errKey);
     $('transcriptBox').classList.add('visible');
   };
 
@@ -631,7 +867,7 @@ function buildRecognition() {
     const final = accumulated.trim();
     if (final) showComparison(final);
     else if ($('youSaid').textContent.startsWith('🎤')) {
-      $('youSaid').textContent = T('nothingDetected');
+      $('youSaid').innerHTML = errorWithHelp(T('nothingDetected'), 'sr-no-speech');
     }
   };
 
@@ -669,7 +905,7 @@ async function checkMicSilently() {
 
 async function toggleRecording() {
   if (!SR) {
-    $('youSaid').innerHTML = T('notSupported');
+    $('youSaid').innerHTML = errorWithHelp(T('notSupported'), 'sr-not-supported');
     $('transcriptBox').classList.add('visible');
     return;
   }
@@ -888,10 +1124,18 @@ function buildFreeRecognition() {
     if (e.error === 'aborted') return;
     freeIsRecording = false;
     setFreeBtnStopped();
-    let msg = '❌ ' + e.error;
-    if (e.error === 'not-allowed') msg = isIOS ? T('micDeniedIOS') : T('micDenied');
-    if (e.error === 'network')     msg = T('networkError');
-    $('freeYouSaid').textContent = msg;
+    let msg, errKey;
+    if (e.error === 'not-allowed') {
+      msg = isIOS ? T('micDeniedIOS') : T('micDenied');
+      errKey = 'mic-not-allowed';
+    } else if (e.error === 'network') {
+      msg = T('networkError');
+      errKey = 'sr-network';
+    } else {
+      msg = '❌ ' + e.error;
+      errKey = 'sr-not-supported';
+    }
+    $('freeYouSaid').innerHTML = errorWithHelp(msg, errKey);
   };
 
   r.onend = () => {
@@ -904,7 +1148,7 @@ function buildFreeRecognition() {
     const final = freeAccumulated.trim();
     if (final) showFreeComparison(final);
     else if ($('freeYouSaid').textContent.startsWith('🎤')) {
-      $('freeYouSaid').textContent = T('nothingDetected');
+      $('freeYouSaid').innerHTML = errorWithHelp(T('nothingDetected'), 'sr-no-speech');
     }
   };
   return r;
@@ -924,7 +1168,7 @@ function setFreeBtnStopped() {
 
 async function toggleFreeRecording() {
   if (!SR) {
-    $('freeYouSaid').innerHTML = T('notSupported');
+    $('freeYouSaid').innerHTML = errorWithHelp(T('notSupported'), 'sr-not-supported');
     $('freeTranscriptBox').classList.add('visible');
     return;
   }
@@ -1150,10 +1394,18 @@ function buildPronRecognition() {
     if (e.error === 'aborted') return;
     pronIsRecording = false;
     setPronBtnStopped();
-    let msg = '❌ ' + e.error;
-    if (e.error === 'not-allowed') msg = isIOS ? T('micDeniedIOS') : T('micDenied');
-    if (e.error === 'network')     msg = T('networkError');
-    $('pronYouSaid').textContent = msg;
+    let msg, errKey;
+    if (e.error === 'not-allowed') {
+      msg = isIOS ? T('micDeniedIOS') : T('micDenied');
+      errKey = 'mic-not-allowed';
+    } else if (e.error === 'network') {
+      msg = T('networkError');
+      errKey = 'sr-network';
+    } else {
+      msg = '❌ ' + e.error;
+      errKey = 'sr-not-supported';
+    }
+    $('pronYouSaid').innerHTML = errorWithHelp(msg, errKey);
   };
 
   r.onend = () => {
@@ -1166,7 +1418,7 @@ function buildPronRecognition() {
     const final = pronAccumulated.trim();
     if (final) showPronFeedback(final);
     else if ($('pronYouSaid').textContent.startsWith('🎤')) {
-      $('pronYouSaid').textContent = T('nothingDetected');
+      $('pronYouSaid').innerHTML = errorWithHelp(T('nothingDetected'), 'sr-no-speech');
     }
   };
   return r;
@@ -1186,7 +1438,7 @@ function setPronBtnStopped() {
 
 async function togglePronRecording() {
   if (!SR) {
-    $('pronYouSaid').innerHTML = T('notSupported');
+    $('pronYouSaid').innerHTML = errorWithHelp(T('notSupported'), 'sr-not-supported');
     $('pronTranscriptBox').classList.add('visible');
     return;
   }
@@ -1294,7 +1546,7 @@ async function requestMicPermission() {
                 pendingMicMode === 'pron' ? 'pronTranscriptBox' : 'transcriptBox';
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    $(elId).textContent = T('notSupported');
+    $(elId).innerHTML = errorWithHelp(T('notSupported'), 'media-not-supported');
     $(boxId).classList.add('visible');
     return;
   }
@@ -1306,7 +1558,21 @@ async function requestMicPermission() {
     else if (pendingMicMode === 'pron') startPronRecording();
     else                                startRecording();
   } catch (err) {
-    $(elId).textContent = isIOS ? T('micDeniedIOS') : T('micDenied');
+    const errName = err && err.name ? err.name : '';
+    let errKey = 'mic-not-allowed';
+    let msg = isIOS ? T('micDeniedIOS') : T('micDenied');
+    if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+      errKey = 'mic-blocked-system';
+      msg = lang === 'es'
+        ? '❌ No se ha encontrado ningún micrófono.'
+        : '❌ No microphone found.';
+    } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+      errKey = 'mic-blocked-system';
+      msg = lang === 'es'
+        ? '❌ No se puede acceder al micrófono. Otra app puede estar usándolo.'
+        : '❌ Microphone is unavailable. Another app may be using it.';
+    }
+    $(elId).innerHTML = errorWithHelp(msg, errKey);
     $(boxId).classList.add('visible');
   }
 }

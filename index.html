@@ -308,6 +308,56 @@
 
 </div>
 
+<!-- FLOATING HELP BUTTON -->
+<button class="help-fab" onclick="showHelpMenu()" aria-label="Help">
+  <span>?</span>
+</button>
+
+<!-- HELP MENU MODAL -->
+<div class="modal-overlay" id="helpMenuModal">
+  <div class="modal modal-error">
+    <button class="modal-close" onclick="closeHelpMenu()" aria-label="Cerrar">×</button>
+    <h3 data-i18n="helpTitle">Ayuda y solución de problemas</h3>
+    <p data-i18n="helpLead">Selecciona el problema que tienes:</p>
+    <div class="help-menu-list">
+      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('mic-not-allowed')">
+        <span class="help-menu-icon">🎤</span>
+        <span class="help-menu-text" data-i18n="helpMic">El micrófono no funciona</span>
+      </button>
+      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('sr-not-supported')">
+        <span class="help-menu-icon">🗣️</span>
+        <span class="help-menu-text" data-i18n="helpSR">No se transcribe mi voz</span>
+      </button>
+      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('sr-network')">
+        <span class="help-menu-icon">📡</span>
+        <span class="help-menu-text" data-i18n="helpNet">Error de red al grabar</span>
+      </button>
+      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('tts-not-supported')">
+        <span class="help-menu-icon">🔊</span>
+        <span class="help-menu-text" data-i18n="helpTTS">No oigo el audio</span>
+      </button>
+      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('mic-blocked-system')">
+        <span class="help-menu-icon">🔒</span>
+        <span class="help-menu-text" data-i18n="helpSys">Micrófono bloqueado por el sistema</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ERROR HELP MODAL -->
+<div class="modal-overlay" id="errorModal">
+  <div class="modal modal-error">
+    <button class="modal-close" onclick="closeErrorModal()" aria-label="Cerrar">×</button>
+    <h3 id="errorTitle"></h3>
+    <div class="error-browser-tag" id="errorBrowser"></div>
+    <p id="errorLead"></p>
+    <ol class="error-steps" id="errorSteps"></ol>
+    <div class="modal-btns">
+      <button class="modal-btn modal-allow" onclick="closeErrorModal()" data-i18n="understood">Entendido</button>
+    </div>
+  </div>
+</div>
+
 <!-- MIC PERMISSION MODAL -->
 <div class="modal-overlay" id="micModal">
   <div class="modal">

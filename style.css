@@ -3,6 +3,72 @@
    style.css — no external dependencies
 ═══════════════════════════════════════════════════════ */
 
+/* ── FLOATING HELP BUTTON ─────────────────────────── */
+.help-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  bottom: max(20px, env(safe-area-inset-bottom, 20px));
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background-color: var(--navy);
+  color: var(--gold);
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  transition: background 0.2s, transform 0.1s;
+}
+.help-fab:hover {
+  background-color: var(--gold);
+  color: var(--navy-deep);
+  transform: scale(1.05);
+}
+.help-fab:active { transform: scale(0.95); }
+
+/* ── HELP MENU ────────────────────────────────────── */
+.help-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+.help-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  background-color: rgba(245,236,214,0.04);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--cream);
+  font-family: var(--serif);
+  font-size: 15px;
+  cursor: pointer;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  transition: background 0.2s, border-color 0.2s;
+}
+.help-menu-item:hover {
+  background-color: rgba(201,169,97,0.1);
+  border-color: var(--gold);
+}
+.help-menu-icon { font-size: 22px; flex-shrink: 0; }
+.help-menu-text { flex: 1; }
+
 /* ── COMPATIBILITY BANNER ─────────────────────────── */
 .compat-banner {
   position: relative;
@@ -35,6 +101,140 @@
   outline: none;
 }
 .banner-close:hover { color: #fff; }
+
+.banner-link {
+  background: transparent;
+  border: 1px solid #f5a623;
+  color: #f5a623;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.banner-link:hover { background-color: rgba(245,166,35,0.2); }
+
+/* Inline help button (next to error messages) */
+.error-help-btn {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid currentColor;
+  color: var(--gold-light);
+  padding: 4px 10px;
+  margin-left: 6px;
+  border-radius: 4px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.error-help-btn:hover {
+  background-color: rgba(201,169,97,0.15);
+}
+
+/* ── ERROR HELP MODAL ─────────────────────────────── */
+.modal-error {
+  max-width: 480px;
+  text-align: left;
+  position: relative;
+  padding: 32px 24px 24px;
+}
+.modal-error h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 8px;
+  text-align: left;
+}
+.modal-error p {
+  font-family: var(--serif);
+  font-size: 15px;
+  color: var(--cream);
+  line-height: 1.55;
+  margin-bottom: 16px;
+  text-align: left;
+}
+.modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 26px;
+  cursor: pointer;
+  padding: 4px 10px;
+  line-height: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--cream); }
+
+.error-browser-tag {
+  display: inline-block;
+  background-color: rgba(201,169,97,0.12);
+  border: 1px solid var(--border);
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-bottom: 14px;
+}
+
+.error-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+  counter-reset: step-counter;
+}
+.error-steps li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(201,169,97,0.15);
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--cream);
+}
+.error-steps li:last-child { border-bottom: none; }
+.error-steps .step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: var(--gold);
+  color: var(--navy-deep);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.error-steps .step-text { flex: 1; padding-top: 2px; }
+.error-steps strong { color: var(--gold-light); font-weight: 700; }
+.error-steps em { color: var(--gold); font-style: italic; }
 
 /* ── CROSS-BROWSER NORMALIZATION ──────────────────── */
 /* Firefox button quirks */
