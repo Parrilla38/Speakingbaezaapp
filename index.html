@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a1628" />
+  <title>Speaking Trainer · Guardia Civil</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="lang-toggle">
+      <button class="lang-btn active" data-lang="es" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="emblem">&#x26DC;</div>
+    <div class="crest-line" data-i18n="motto">El Honor es mi divisa</div>
+    <h1><span data-i18n="h1a">Speaking</span> <em data-i18n="h1b">Trainer</em></h1>
+    <p class="subtitle" data-i18n="subtitle">Academia · Guardia Civil</p>
+  </header>
+
+  <!-- COMPATIBILITY BANNER (only shown when SR isn't supported) -->
+  <div class="compat-banner" id="compatBanner" style="display:none"></div>
+
+  <!-- MODE TABS -->
+  <nav class="mode-tabs">
+    <button class="mode-tab active" data-mode="preset" onclick="setMode('preset')">
+      <span class="mode-icon">📜</span>
+      <span data-i18n="modePreset">Frases predefinidas</span>
+    </button>
+    <button class="mode-tab" data-mode="free" onclick="setMode('free')">
+      <span class="mode-icon">✍️</span>
+      <span data-i18n="modeFree">Speaking libre</span>
+    </button>
+    <button class="mode-tab" data-mode="pronunciation" onclick="setMode('pronunciation')">
+      <span class="mode-icon">🗣️</span>
+      <span data-i18n="modePron">Pronunciación</span>
+    </button>
+  </nav>
+
+  <!-- SPEED -->
+  <div class="settings-row">
+    <span class="settings-label" data-i18n="speed">Velocidad:</span>
+    <button class="speed-btn" data-rate="0.75" onclick="setSpeed(0.75)" data-i18n="slow">Lenta</button>
+    <button class="speed-btn active" data-rate="1.0"  onclick="setSpeed(1.0)"  data-i18n="normal">Normal</button>
+    <button class="speed-btn" data-rate="1.2"  onclick="setSpeed(1.2)"  data-i18n="fast">Rápida</button>
+  </div>
+
+  <!-- ─────────────────  MODE: PRESET  ───────────────── -->
+  <section class="mode-section active" id="modePreset">
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel">—</div>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card" id="mainCard">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="topic-tag" id="topicTag"></div>
+    <div class="question-num" id="questionNum"></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="question-translation" id="questionTranslation"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-q" id="btnQ" onclick="speakQuestion()">
+        <span class="btn-icon">&#128266;</span>
+        <span data-i18n="listenQ">Escuchar pregunta</span>
+        <span class="dot"></span>
+      </button>
+      <button class="btn btn-a" id="btnA" onclick="speakAnswer()">
+        <span class="btn-icon">&#128172;</span>
+        <span data-i18n="listenA">Escuchar respuesta</span>
+        <span class="dot"></span>
+      </button>
+      <button class="btn btn-show" onclick="toggleAnswer()">
+        <span class="btn-icon">&#128220;</span>
+        <span id="showBtnText" data-i18n="showA">Ver respuesta</span>
+      </button>
+    </div>
+
+    <div class="answer-box" id="answerBox">
+      <div class="answer-label" data-i18n="answerLabel">Respuesta modelo</div>
+      <div class="answer-text" id="answerText"></div>
+      <div class="answer-translation" id="answerTranslation"></div>
+    </div>
+
+    <!-- RECORDING -->
+    <div class="record-section">
+      <div class="record-label" data-i18n="recordLabel">&#127908; Tu turno — graba tu respuesta</div>
+      <button class="btn-record" id="btnRecord" onclick="toggleRecording()">
+        <span class="mic-dot"></span>
+        <span id="recordBtnText" data-i18n="startRec">Empezar a grabar</span>
+      </button>
+
+      <div class="transcript-box" id="transcriptBox">
+        <div class="t-row">
+          <div class="t-label t-you" data-i18n="youSaidLabel">&#128483; Lo que dijiste</div>
+          <div class="t-content" id="youSaid">—</div>
+        </div>
+        <div class="t-row" id="comparisonRow" style="display:none">
+          <div class="t-label t-correct" data-i18n="correctLabel">&#10003; Respuesta correcta</div>
+          <div class="t-content" id="wordComparison"></div>
+        </div>
+        <div class="t-row" id="tipsRow" style="display:none">
+          <div class="t-label t-tips" data-i18n="tipsLabel">&#128161; Pronunciación</div>
+          <ul class="tips-list" id="tipsList"></ul>
+        </div>
+        <div class="score-wrap" id="scoreWrap" style="display:none">
+          <div class="score-bar-label" data-i18n="scoreLabel">Puntuación</div>
+          <div class="score-bar-outer"><div class="score-bar-inner" id="scoreBar"></div></div>
+          <div class="score-text" id="scoreText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLETED -->
+  <div class="card card-completed" id="completedCard" style="display:none">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+    <div class="completed-icon">&#127894;</div>
+    <h2 data-i18n="wellDone">¡Misión cumplida!</h2>
+    <p data-i18n="completedText">Has completado todas las preguntas. ¡Sigue practicando!</p>
+    <button class="btn-restart" onclick="restart()" data-i18n="restart">Empezar de nuevo</button>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-row">
+    <button class="btn-nav" id="btnPrev" onclick="prevQ()" data-i18n="prev">&#8592; Anterior</button>
+    <button class="btn-nav btn-next" id="btnNext" onclick="nextQ()" data-i18n="next">Siguiente &#8594;</button>
+  </div>
+
+  </section>
+  <!-- END MODE: PRESET -->
+
+
+  <!-- ─────────────────  MODE: FREE  ───────────────── -->
+  <section class="mode-section" id="modeFree">
+
+    <div class="card free-card">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <div class="topic-tag" data-i18n="freeTitle">✍️ Speaking Libre</div>
+      <p class="mode-intro" data-i18n="freeIntro">Crea tu propia pregunta y respuesta para practicar lo que quieras.</p>
+
+      <div class="input-group">
+        <label class="input-label" data-i18n="freeQLabel">Tu pregunta (en inglés)</label>
+        <textarea class="input-field" id="freeQuestion" rows="2" placeholder="What is your name?"></textarea>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label" data-i18n="freeALabel">Tu respuesta modelo (en inglés)</label>
+        <textarea class="input-field" id="freeAnswer" rows="3" placeholder="My name is John and I am a Civil Guard."></textarea>
+      </div>
+
+      <button class="btn btn-q btn-full" onclick="loadFreeQuestion()">
+        <span class="btn-icon">▶️</span>
+        <span data-i18n="startPractice">Empezar a practicar</span>
+      </button>
+
+      <!-- Practice area (shown after submitting) -->
+      <div class="free-practice" id="freePractice" style="display:none">
+        <hr class="divider">
+
+        <div class="question-num" data-i18n="yourQ">TU PREGUNTA</div>
+        <div class="question-text" id="freeQuestionText"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-q" id="freeBtnQ" onclick="speakFreeQuestion()">
+            <span class="btn-icon">🔊</span>
+            <span data-i18n="listenQ">Escuchar pregunta</span>
+            <span class="dot"></span>
+          </button>
+          <button class="btn btn-a" id="freeBtnA" onclick="speakFreeAnswer()">
+            <span class="btn-icon">💬</span>
+            <span data-i18n="listenA">Escuchar respuesta</span>
+            <span class="dot"></span>
+          </button>
+          <button class="btn btn-show" onclick="toggleFreeAnswer()">
+            <span class="btn-icon">📜</span>
+            <span id="freeShowText" data-i18n="showA">Ver respuesta</span>
+          </button>
+        </div>
+
+        <div class="answer-box" id="freeAnswerBox">
+          <div class="answer-label" data-i18n="answerLabel">Respuesta modelo</div>
+          <div class="answer-text" id="freeAnswerText"></div>
+        </div>
+
+        <div class="record-section">
+          <div class="record-label" data-i18n="recordLabel">🎤 Tu turno — graba tu respuesta</div>
+          <button class="btn-record" id="freeBtnRecord" onclick="toggleFreeRecording()">
+            <span class="mic-dot"></span>
+            <span id="freeRecordText" data-i18n="startRec">Empezar a grabar</span>
+          </button>
+
+          <div class="transcript-box" id="freeTranscriptBox">
+            <div class="t-row">
+              <div class="t-label t-you" data-i18n="youSaidLabel">🗣 Lo que dijiste</div>
+              <div class="t-content" id="freeYouSaid">—</div>
+            </div>
+            <div class="t-row" id="freeComparisonRow" style="display:none">
+              <div class="t-label t-correct" data-i18n="correctLabel">✓ Respuesta correcta</div>
+              <div class="t-content" id="freeWordComparison"></div>
+            </div>
+            <div class="score-wrap" id="freeScoreWrap" style="display:none">
+              <div class="score-bar-label" data-i18n="scoreLabel">Puntuación</div>
+              <div class="score-bar-outer"><div class="score-bar-inner" id="freeScoreBar"></div></div>
+              <div class="score-text" id="freeScoreText"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-show btn-full" onclick="resetFreeMode()" style="margin-top:18px">
+          <span class="btn-icon">🔄</span>
+          <span data-i18n="newPractice">Nueva práctica</span>
+        </button>
+      </div>
+    </div>
+
+  </section>
+  <!-- END MODE: FREE -->
+
+
+  <!-- ─────────────────  MODE: PRONUNCIATION  ───────────────── -->
+  <section class="mode-section" id="modePronunciation">
+
+    <div class="card pron-card">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+
+      <div class="topic-tag" data-i18n="pronTitle">🗣️ Pronunciación</div>
+      <p class="mode-intro" data-i18n="pronIntro">Escribe una palabra o frase en inglés. Te enseñamos cómo pronunciarla y puedes escucharla.</p>
+
+      <div class="input-group">
+        <label class="input-label" data-i18n="pronInputLabel">Palabra o frase en inglés</label>
+        <input type="text" class="input-field" id="pronInput" placeholder="weapon" autocomplete="off" autocapitalize="off" />
+      </div>
+
+      <button class="btn btn-q btn-full" onclick="checkPronunciation()">
+        <span class="btn-icon">🔍</span>
+        <span data-i18n="showPron">Ver pronunciación</span>
+      </button>
+
+      <!-- Pronunciation result -->
+      <div class="pron-result" id="pronResult" style="display:none">
+        <hr class="divider">
+
+        <div class="pron-word" id="pronWord"></div>
+        <div class="pron-phonetic" id="pronPhonetic"></div>
+        <div class="pron-easy" id="pronEasy"></div>
+
+        <div class="btn-row" style="margin-top:18px">
+          <button class="btn btn-q btn-full" id="pronBtnSpeak" onclick="speakPronInput()">
+            <span class="btn-icon">🔊</span>
+            <span data-i18n="listenIt">Escuchar pronunciación</span>
+            <span class="dot"></span>
+          </button>
+        </div>
+
+        <!-- Practice mic -->
+        <div class="record-section">
+          <div class="record-label" data-i18n="practicePron">🎤 Practica pronunciándolo tú</div>
+          <button class="btn-record" id="pronBtnRecord" onclick="togglePronRecording()">
+            <span class="mic-dot"></span>
+            <span id="pronRecordText" data-i18n="startRec">Empezar a grabar</span>
+          </button>
+
+          <div class="transcript-box" id="pronTranscriptBox">
+            <div class="t-row">
+              <div class="t-label t-you" data-i18n="youSaidLabel">🗣 Lo que dijiste</div>
+              <div class="t-content" id="pronYouSaid">—</div>
+            </div>
+            <div class="t-row" id="pronFeedbackRow" style="display:none">
+              <div class="t-label t-correct" id="pronFeedbackLabel"></div>
+              <div class="t-content" id="pronFeedback"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent words -->
+      <div class="pron-recent" id="pronRecent" style="display:none">
+        <div class="record-label" data-i18n="recentWords" style="margin-top:18px">📚 Palabras recientes</div>
+        <div class="pron-recent-list" id="pronRecentList"></div>
+      </div>
+    </div>
+
+  </section>
+  <!-- END MODE: PRONUNCIATION -->
+
+</div>
+
+<!-- MIC PERMISSION MODAL -->
+<div class="modal-overlay" id="micModal">
+  <div class="modal">
+    <div class="modal-icon">&#127897;</div>
+    <h3 data-i18n="micTitle">Permiso de micrófono</h3>
+    <p id="micModalText"></p>
+    <div class="modal-btns">
+      <button class="modal-btn modal-cancel" onclick="closeMicModal()" data-i18n="cancel">Cancelar</button>
+      <button class="modal-btn modal-allow" onclick="requestMicPermission()" data-i18n="allow">Permitir</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span data-i18n="footer">Desarrollado por el alumno</span> <strong>13123</strong>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
