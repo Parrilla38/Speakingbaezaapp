@@ -1,439 +1,668 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a1628" />
-  <title>Speaking Trainer · Guardia Civil</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Speaking · Academia de Baeza</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    /* ── Paleta Guardia Civil-inspired ── */
+    --m-bg:        #f3eddc;         /* papel crema cálido */
+    --m-bg-2:      #ebe3cc;         /* crema más profundo */
+    --m-surface:   #ffffff;
+    --m-card:      #faf5e8;
+    --m-ink:       #0f1411;
+    --m-ink-2:     rgba(15,20,17,.74);
+    --m-muted:     rgba(15,20,17,.55);
+    --m-line:      rgba(15,20,17,.10);
+    --m-line-strong: rgba(15,20,17,.20);
+
+    --m-accent:    #1f3a26;         /* verde benemérito */
+    --m-accent-2:  #16291a;         /* verde profundo */
+    --m-gold:      #b8924a;         /* dorado */
+    --m-gold-2:    #d4ad60;         /* dorado claro */
+    --m-burgundy:  #6b1f1f;         /* granate sobrio */
+
+    --m-font-display: "Fraunces", "Times New Roman", serif;
+    --m-font-ui:      "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --m-font-mono:    "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+    /* Legacy bridges */
+    --olive: var(--m-accent);
+    --olive-2: var(--m-accent-2);
+    --gold:  var(--m-gold);
+    --gold-2: var(--m-gold-2);
+    --paper: var(--m-bg);
+    --paper-2: var(--m-bg-2);
+    --paper-3: #e0d6b8;
+    --cream: var(--m-card);
+    --ink:   var(--m-ink);
+    --ink-2: var(--m-ink-2);
+    --olive-soft: var(--m-muted);
+    --line: var(--m-line);
+    --line-strong: var(--m-line-strong);
+    --font-display: var(--m-font-display);
+    --font-ui:      var(--m-font-ui);
+    --font-mono:    var(--m-font-mono);
+  }
+
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family: var(--m-font-ui);
+    background: var(--m-bg);
+    color: var(--m-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01";
+    overflow-x:hidden;
+  }
+  button{ font-family: inherit; }
+
+  /* Sutil textura de papel — visible pero no ruidosa */
+  body::before{
+    content:''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      radial-gradient(rgba(15,20,17,.022) 1px, transparent 1px),
+      radial-gradient(rgba(15,20,17,.014) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1px 2px;
+    opacity: .7;
+    mix-blend-mode: multiply;
+  }
+
+  /* Layout */
+  .m-container{
+    position: relative; z-index: 1;
+    width: min(1100px, 100% - 48px);
+    margin: 0 auto;
+  }
+  @media (max-width: 640px){
+    .m-container{ width: calc(100% - 28px); }
+  }
+
+  .fade-enter{ animation: fadeIn .4s ease both; }
+  @keyframes fadeIn{ from{opacity:0; transform: translateY(8px);} to{opacity:1; transform:none;} }
+
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background: transparent; }
+  ::-webkit-scrollbar-thumb{ background: rgba(15,20,17,.16); border-radius:10px; }
+  ::-webkit-scrollbar-thumb:hover{ background: rgba(15,20,17,.30); }
+  ::selection{ background: var(--m-accent); color: var(--m-bg); }
+
+  /* ── Tipografía utilitaria ── */
+  .m-mono{ font-family: var(--m-font-mono); letter-spacing: .04em; }
+  .m-eyebrow{
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: var(--m-font-mono);
+    font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .m-dot{
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--m-gold);
+    box-shadow: 0 0 0 4px rgba(184,146,74,.16);
+  }
+  .m-rule{
+    display: inline-block; height: 1px; background: var(--m-line-strong);
+    flex: 1; max-width: 56px;
+  }
+
+  /* ── Hero ─────────────────────────────────────── */
+  .m-hero-h1{
+    font-family: var(--m-font-display);
+    font-weight: 350;
+    font-size: clamp(48px, 11vw, 128px);
+    line-height: .94;
+    letter-spacing: -.025em;
+    margin: 0;
+    color: var(--m-ink);
+    text-wrap: balance;
+  }
+  .m-hero-h1 em{
+    font-style: italic;
+    color: var(--m-accent);
+    font-weight: 400;
+  }
+  .m-hero-flourish{
+    color: var(--m-gold);
+    font-family: var(--m-font-display);
+    font-style: italic;
+  }
+
+  /* ── Mode cards (más atractivos, con personalidad) ── */
+  .m-mode{
+    position: relative;
+    display: flex; align-items: stretch; gap: 0;
+    width: 100%;
+    background: var(--m-card);
+    border: 1px solid var(--m-line);
+    cursor: pointer;
+    text-align: left;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    font-family: var(--m-font-ui);
+    overflow: hidden;
+    padding: 0;
+  }
+  .m-mode + .m-mode{ margin-top: -1px; }
+  .m-mode:hover{
+    border-color: var(--m-accent);
+    z-index: 2;
+    box-shadow: 0 12px 32px -16px rgba(15,20,17,.18);
+  }
+  .m-mode.primary{
+    background: var(--m-accent);
+    color: var(--m-bg);
+    border-color: var(--m-accent);
+  }
+  .m-mode.primary:hover{
+    background: var(--m-accent-2);
+    border-color: var(--m-accent-2);
+  }
+
+  .m-mode-rail{
+    flex: 0 0 76px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+    border-right: 1px solid var(--m-line);
+    background: rgba(15,20,17,.02);
+  }
+  .m-mode.primary .m-mode-rail{
+    border-right-color: rgba(255,255,255,.16);
+    background: rgba(0,0,0,.14);
+  }
+  .m-mode-rail .num{
+    font-family: var(--m-font-display);
+    font-size: 36px; font-weight: 350;
+    line-height: 1;
+    color: var(--m-gold);
+    letter-spacing: -.02em;
+  }
+  .m-mode-rail .glyph{ opacity: .55; color: inherit; }
+
+  .m-mode-body{
+    flex: 1; min-width: 0;
+    padding: 26px 28px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .m-mode-kicker{
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--m-gold);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .m-mode.primary .m-mode-kicker{ color: var(--m-gold-2); }
+  .m-mode-title{
+    font-family: var(--m-font-display);
+    font-size: clamp(26px, 3.6vw, 38px); font-weight: 400; letter-spacing: -.015em;
+    line-height: 1.05;
+    color: inherit;
+  }
+  .m-mode-title em{ font-style: italic; color: var(--m-gold); }
+  .m-mode.primary .m-mode-title em{ color: var(--m-gold-2); }
+  .m-mode-sub{
+    font-size: 14.5px; line-height: 1.5;
+    color: var(--m-ink-2);
+    max-width: 56ch;
+  }
+  .m-mode.primary .m-mode-sub{ color: rgba(255,255,255,.78); }
+  .m-mode-meta{
+    margin-top: 6px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-family: var(--m-font-mono); font-size: 10.5px;
+    letter-spacing: .18em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .m-mode.primary .m-mode-meta{ color: rgba(255,255,255,.55); }
+  .m-mode-meta span:not(:first-child){ position: relative; padding-left: 16px; }
+  .m-mode-meta span:not(:first-child)::before{
+    content:''; position: absolute; left: 0; top: 50%;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: currentColor; opacity: .5; transform: translateY(-50%);
+  }
+
+  .m-mode-cta{
+    flex: 0 0 64px;
+    display: flex; align-items: center; justify-content: center;
+    border-left: 1px solid var(--m-line);
+    color: var(--m-ink);
+    transition: background .2s ease;
+  }
+  .m-mode.primary .m-mode-cta{
+    border-left-color: rgba(255,255,255,.16);
+    color: var(--m-gold-2);
+  }
+  .m-mode:hover .m-mode-cta{ background: var(--m-gold); color: var(--m-accent-2); }
+  .m-mode.primary:hover .m-mode-cta{ background: var(--m-gold); color: var(--m-accent-2); }
+
+  @media (max-width: 640px){
+    .m-mode-rail{ flex-basis: 56px; padding: 16px 0; }
+    .m-mode-rail .num{ font-size: 26px; }
+    .m-mode-body{ padding: 20px 18px; }
+    .m-mode-cta{ flex-basis: 48px; }
+  }
+
+  /* ── Session card (cadete-lite, elegante) ─────── */
+  .m-session{
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0;
+    background: var(--m-accent);
+    color: var(--m-bg);
+    border: 1px solid var(--m-accent);
+    position: relative;
+    overflow: hidden;
+  }
+  .m-session::before{
+    content:''; position: absolute; right: -40px; top: -40px;
+    width: 280px; height: 280px;
+    background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.04) 0 1px, transparent 1px 14px);
+    pointer-events: none;
+  }
+  .m-session-pane{
+    padding: 28px 30px;
+    position: relative;
+    z-index: 1;
+  }
+  .m-session-pane + .m-session-pane{
+    border-left: 1px solid rgba(255,255,255,.14);
+  }
+  .m-session-eyebrow{
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase;
+    color: rgba(255,255,255,.55);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .m-session-greet{
+    font-family: var(--m-font-display);
+    font-size: clamp(34px, 5vw, 52px);
+    line-height: 1.0; letter-spacing: -.02em;
+    margin: 10px 0 0;
+    font-weight: 350;
+  }
+  .m-session-greet em{ font-style: italic; color: var(--m-gold-2); }
+  .m-session-bar{
+    margin-top: 22px;
+    height: 4px; background: rgba(255,255,255,.12);
+    position: relative; overflow: hidden;
+  }
+  .m-session-bar > span{
+    position: absolute; inset: 0; width: var(--p,0%);
+    background: linear-gradient(90deg, var(--m-gold) 0%, var(--m-gold-2) 100%);
+  }
+  .m-session-bar-meta{
+    margin-top: 8px;
+    display: flex; justify-content: space-between;
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+    color: rgba(255,255,255,.62);
+  }
+  .m-session-bar-meta .v{ color: var(--m-gold-2); }
+
+  .m-stat-row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .m-stat{
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .m-stat-k{
+    font-family: var(--m-font-display); font-weight: 350;
+    font-size: 56px; line-height: 1; letter-spacing: -.02em;
+    color: var(--m-gold-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .m-stat-l{
+    font-family: var(--m-font-mono);
+    font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+    color: rgba(255,255,255,.62);
+  }
+  .m-streak-dots{
+    display: flex; gap: 5px; margin-top: 10px;
+  }
+  .m-streak-dots > span{
+    width: 22px; height: 22px;
+    border: 1px solid rgba(255,255,255,.22);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.4);
+  }
+  .m-streak-dots > span.ok{
+    background: var(--m-gold);
+    color: var(--m-accent-2);
+    border-color: var(--m-gold);
+  }
+
+  @media (max-width: 820px){
+    .m-session{ grid-template-columns: 1fr; }
+    .m-session-pane + .m-session-pane{
+      border-left: none; border-top: 1px solid rgba(255,255,255,.14);
+    }
+  }
+
+  /* ── Section label ─────────────────────────── */
+  .m-section-label{
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--m-font-mono);
+    font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
+    color: var(--m-muted);
+    margin-bottom: 18px;
+  }
+  .m-section-label .n{ color: var(--m-gold); }
+  .m-section-label .line{ flex: 0 0 28px; height: 1px; background: var(--m-line-strong); }
+
+  /* ── Ephemerides (efeméride del día) ─────── */
+  .m-eph{
+    margin-top: 72px;
+    border-top: 1px solid var(--m-line-strong);
+    padding-top: 56px;
+    position: relative;
+  }
+  .m-eph-grid{
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  .m-eph-date{
+    position: sticky; top: 96px;
+  }
+  .m-eph-day{
+    font-family: var(--m-font-display);
+    font-size: clamp(80px, 12vw, 140px);
+    line-height: .9; letter-spacing: -.04em;
+    color: var(--m-accent);
+    font-weight: 350;
+    font-variant-numeric: tabular-nums;
+  }
+  .m-eph-month{
+    font-family: var(--m-font-mono);
+    font-size: 11px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--m-muted);
+    margin-top: 8px;
+  }
+  .m-eph-year{
+    margin-top: 6px;
+    font-family: var(--m-font-display); font-style: italic;
+    font-size: 28px; color: var(--m-gold);
+  }
+  .m-eph-body{
+    padding-left: 32px;
+    border-left: 1px solid var(--m-line-strong);
+    position: relative;
+  }
+  .m-eph-body::before{
+    content:''; position: absolute; left: -1px; top: 0;
+    width: 3px; height: 56px;
+    background: var(--m-gold);
+  }
+  .m-eph-tag{
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--m-gold);
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .m-eph-tag::before{
+    content:''; width: 18px; height: 1px; background: var(--m-gold);
+  }
+  .m-eph-title{
+    font-family: var(--m-font-display);
+    font-weight: 350;
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.1; letter-spacing: -.015em;
+    color: var(--m-ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+  .m-eph-text{
+    margin-top: 16px;
+    font-size: 16px; line-height: 1.6;
+    color: var(--m-ink-2);
+    max-width: 64ch;
+  }
+  .m-eph-foot{
+    margin-top: 22px;
+    display: flex; gap: 18px; flex-wrap: wrap;
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .m-eph-foot strong{ color: var(--m-accent); font-weight: 500; }
+
+  @media (max-width: 720px){
+    .m-eph-grid{ grid-template-columns: 1fr; gap: 24px; }
+    .m-eph-date{ position: static; display: flex; align-items: baseline; gap: 16px; }
+    .m-eph-day{ font-size: 88px; }
+    .m-eph-month, .m-eph-year{ margin-top: 0; }
+    .m-eph-body{ padding-left: 22px; }
+  }
+
+  /* ── Links / tiny / buttons ─────────────── */
+  .m-link{
+    background: transparent; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--m-font-ui); font-size: 13px; font-weight: 500;
+    color: var(--m-ink); padding: 8px 0;
+    border-bottom: 1px solid transparent;
+    transition: border-color .15s, color .15s;
+  }
+  .m-link:hover{ border-bottom-color: var(--m-accent); color: var(--m-accent); }
+  .m-link-sm{
+    color: var(--m-muted); text-decoration: none;
+    font-size: 12px; border-bottom: 1px solid transparent; padding-bottom: 1px;
+  }
+  .m-link-sm:hover{ border-bottom-color: var(--m-line-strong); color: var(--m-ink); }
+
+  .m-tiny-btn{
+    background: transparent; border: 1px solid var(--m-line-strong);
+    border-radius: 999px; padding: 6px 12px;
+    font-family: var(--m-font-ui); font-size: 11.5px; color: var(--m-ink-2);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .m-tiny-btn:hover{ background: var(--m-ink); color: var(--m-bg); border-color: var(--m-ink); }
+
+  .m-btn{
+    background: var(--m-card); border: 1px solid var(--m-line-strong);
+    padding: 14px 22px;
+    font-family: var(--m-font-ui); font-size: 14px; font-weight: 500;
+    color: var(--m-ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 10px;
+    transition: all .18s ease;
+    border-radius: 0;
+    min-height: 48px;
+  }
+  .m-btn:hover{ background: var(--m-bg-2); border-color: var(--m-accent); }
+  .m-btn.primary{
+    background: var(--m-accent); color: var(--m-bg); border-color: var(--m-accent);
+  }
+  .m-btn.primary:hover{ background: var(--m-accent-2); border-color: var(--m-accent-2); }
+  .m-btn.gold{
+    background: var(--m-gold); color: var(--m-accent-2); border-color: var(--m-gold);
+  }
+  .m-btn.gold:hover{ background: var(--m-gold-2); border-color: var(--m-gold-2); }
+
+  /* ── Segmented ─────────────────────────── */
+  .m-seg{
+    display: inline-flex; align-items: center;
+    background: var(--m-card);
+    padding: 3px;
+    border: 1px solid var(--m-line);
+  }
+  .m-seg button{
+    border: none; background: transparent;
+    padding: 7px 12px;
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--m-ink-2); cursor: pointer; font-weight: 500;
+    transition: background .15s, color .15s;
+    min-height: 36px;
+  }
+  .m-seg button.on{
+    background: var(--m-accent); color: var(--m-bg);
+  }
+
+  /* ── Lang switch ──────────────────────── */
+  .m-langs{
+    display: inline-flex; padding: 3px;
+    border: 1px solid var(--m-line-strong); border-radius: 999px;
+    background: var(--m-card);
+  }
+  .m-langs button{
+    border: none; background: transparent;
+    padding: 6px 12px; border-radius: 999px;
+    font-family: var(--m-font-mono);
+    font-size: 11px; letter-spacing: .14em;
+    color: var(--m-ink-2); cursor: pointer; font-weight: 500;
+    transition: background .15s, color .15s;
+    min-height: 32px;
+  }
+  .m-langs button.on{ background: var(--m-accent); color: var(--m-bg); }
+
+  .m-icon-btn{
+    width: 38px; height: 38px; border-radius: 999px;
+    border: 1px solid var(--m-line-strong);
+    background: var(--m-card); color: var(--m-ink-2); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: 8px;
+    transition: background .15s, color .15s;
+  }
+  .m-icon-btn:hover{ background: var(--m-accent); color: var(--m-bg); border-color: var(--m-accent); }
+
+  /* ── Record button ─────────────────────── */
+  .m-record{
+    width: 96px; height: 96px; border-radius: 50%;
+    border: 1px solid var(--m-line-strong);
+    background: var(--m-card);
+    color: var(--m-ink);
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all .22s ease;
+  }
+  .m-record:hover{ background: var(--m-accent); color: var(--m-bg); border-color: var(--m-accent); }
+  .m-record[data-active="true"]{
+    background: var(--m-burgundy); color: #fff; border-color: var(--m-burgundy);
+    box-shadow: 0 0 0 8px rgba(107,31,31,.10), 0 0 0 18px rgba(107,31,31,.05);
+    animation: pulse 1.7s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ box-shadow: 0 0 0 8px rgba(107,31,31,.10), 0 0 0 18px rgba(107,31,31,.05); }
+    50%    { box-shadow: 0 0 0 14px rgba(107,31,31,.18), 0 0 0 26px rgba(107,31,31,.08); }
+  }
+
+  /* ── Pills ────────────────────────────── */
+  .m-pill{
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
+    padding: 6px 10px; border-radius: 999px;
+    background: var(--m-card); color: var(--m-ink-2);
+    border: 1px solid var(--m-line-strong);
+  }
+  .m-pill.gold{ color: var(--m-gold); border-color: var(--m-gold); }
+
+  /* ── Disclosure ─────────────────────── */
+  .m-disclose{
+    width: 100%;
+    background: transparent; border: none;
+    padding: 18px 0;
+    border-top: 1px solid var(--m-line);
+    border-bottom: 1px solid var(--m-line);
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer;
+    font-family: var(--m-font-ui); font-size: 14.5px; font-weight: 500;
+    color: var(--m-ink);
+    min-height: 56px;
+  }
+  .m-disclose:hover{ color: var(--m-accent); }
+  .m-disclose-icon{
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px;
+    color: var(--m-gold);
+    transition: transform .2s ease;
+  }
+  .m-disclose-icon[data-open="true"]{ transform: rotate(90deg); }
+
+  /* ── Footer ──────────────────────────── */
+  .m-footer{
+    margin-top: 64px; padding-top: 28px;
+    border-top: 1px solid var(--m-line);
+    display: flex; justify-content: space-between; align-items: flex-end;
+    flex-wrap: wrap; gap: 16px;
+    font-family: var(--m-font-mono);
+    font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--m-muted);
+  }
+  .m-footer .lemma{
+    font-family: var(--m-font-display); font-style: italic;
+    font-size: 24px; letter-spacing: -.005em; text-transform: none;
+    color: var(--m-accent); margin-bottom: 8px;
+  }
+  .m-footer .lemma .g{ color: var(--m-gold); }
+
+  /* ── Exam · rules grid ───────────────── */
+  .m-exam-rules{
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  }
+  .m-exam-rule{
+    padding: 24px 22px;
+    border-left: 1px solid var(--m-line);
+  }
+  .m-exam-rule:first-child{ border-left: none; }
+  @media (max-width: 820px){
+    .m-exam-rules{ grid-template-columns: repeat(2, 1fr); }
+    .m-exam-rule{ border-left: 1px solid var(--m-line); }
+    .m-exam-rule:nth-child(2n+1){ border-left: none; }
+    .m-exam-rule:nth-child(n+3){ border-top: 1px solid var(--m-line); }
+  }
+  @media (max-width: 480px){
+    .m-exam-rules{ grid-template-columns: 1fr; }
+    .m-exam-rule{ border-left: none; }
+    .m-exam-rule + .m-exam-rule{ border-top: 1px solid var(--m-line); }
+  }
+
+  /* ── Exam · review body (per-question detail) ─ */
+  .m-exam-review-body{
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+  }
+  .m-exam-review-model{
+    border-left: 1px solid var(--m-line-strong);
+    padding-left: 24px;
+  }
+  @media (max-width: 720px){
+    .m-exam-review-body{ grid-template-columns: 1fr; gap: 0; }
+    .m-exam-review-model{
+      border-left: none; padding-left: 0;
+      border-top: 1px dashed var(--m-line-strong);
+      margin-top: 8px;
+    }
+  }
+</style>
+
+<script type="application/json" id="speaker-notes">[]</script>
 </head>
 <body>
+<div id="root"></div>
 
-<div class="wrap">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-  <!-- HEADER -->
-  <header>
-    <div class="lang-toggle">
-      <button class="lang-btn active" data-lang="es" onclick="setLang('es')">ES</button>
-      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
-    </div>
-    <div class="emblem">&#x26DC;</div>
-    <div class="crest-line" data-i18n="motto">El Honor es mi divisa</div>
-    <h1><span data-i18n="h1a">Speaking</span> <em data-i18n="h1b">Trainer</em></h1>
-    <p class="subtitle" data-i18n="subtitle">Academia · Guardia Civil</p>
-  </header>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel" src="ephemerides.jsx"></script>
+<script type="text/babel" src="exam.jsx"></script>
+<script type="text/babel" src="screens-minimal.jsx"></script>
+<script type="text/babel" src="app-minimal.jsx"></script>
 
-  <!-- COMPATIBILITY BANNER (only shown when SR isn't supported) -->
-  <div class="compat-banner" id="compatBanner" style="display:none"></div>
-
-  <!-- ─────────────────  HOME (landing) ───────────────── -->
-  <section class="mode-section active" id="modeHome">
-    <div class="home-intro">
-      <p class="home-lead" data-i18n="homeLead">Elige el modo de práctica que mejor se adapte a lo que quieres hacer hoy.</p>
-    </div>
-
-    <div class="home-cards">
-      <button class="home-card" onclick="setMode('preset')">
-        <div class="home-card-glyph">📜</div>
-        <div class="home-card-content">
-          <div class="home-card-tag" data-i18n="cardTagRecommended">Recomendado</div>
-          <h2 class="home-card-title" data-i18n="cardPresetTitle">Frases predefinidas</h2>
-          <p class="home-card-desc" data-i18n="cardPresetDesc">Practica con las 20 preguntas oficiales del speaking de la academia: armas, delitos, descripción, etc. Incluye respuesta modelo y traducción.</p>
-          <ul class="home-card-features">
-            <li data-i18n="cardPresetF1">✓ 20 preguntas tipo examen</li>
-            <li data-i18n="cardPresetF2">✓ Respuestas modelo en inglés</li>
-            <li data-i18n="cardPresetF3">✓ Traducción al español</li>
-          </ul>
-        </div>
-        <div class="home-card-arrow">→</div>
-      </button>
-
-      <button class="home-card" onclick="setMode('free')">
-        <div class="home-card-glyph">✍️</div>
-        <div class="home-card-content">
-          <div class="home-card-tag tag-yours" data-i18n="cardTagCustom">Personalizado</div>
-          <h2 class="home-card-title" data-i18n="cardFreeTitle">Speaking libre</h2>
-          <p class="home-card-desc" data-i18n="cardFreeDesc">¿Tienes tu propia pregunta y respuesta? Escríbelas y practica como si fuera un examen real. Ideal para repasar tus apuntes.</p>
-          <ul class="home-card-features">
-            <li data-i18n="cardFreeF1">✓ Tu pregunta, tu respuesta</li>
-            <li data-i18n="cardFreeF2">✓ Mismo sistema de evaluación</li>
-            <li data-i18n="cardFreeF3">✓ Practica cualquier tema</li>
-          </ul>
-        </div>
-        <div class="home-card-arrow">→</div>
-      </button>
-
-      <button class="home-card" onclick="setMode('pronunciation')">
-        <div class="home-card-glyph">🗣️</div>
-        <div class="home-card-content">
-          <div class="home-card-tag tag-quick" data-i18n="cardTagQuick">Rápido</div>
-          <h2 class="home-card-title" data-i18n="cardPronTitle">Pronunciación</h2>
-          <p class="home-card-desc" data-i18n="cardPronDesc">¿No sabes pronunciar una palabra o frase? Escríbela y te enseñamos cómo decirla con una guía fácil de leer.</p>
-          <ul class="home-card-features">
-            <li data-i18n="cardPronF1">✓ Cualquier palabra o frase</li>
-            <li data-i18n="cardPronF2">✓ Guía de pronunciación fácil</li>
-            <li data-i18n="cardPronF3">✓ Practica y verifica tu acento</li>
-          </ul>
-        </div>
-        <div class="home-card-arrow">→</div>
-      </button>
-    </div>
-
-    <div class="home-tip">
-      <div class="home-tip-icon">💡</div>
-      <div>
-        <strong data-i18n="homeTipTitle">Primer uso</strong>
-        <span data-i18n="homeTipText">Recuerda permitir el acceso al micrófono cuando lo pida tu navegador para poder grabar tu voz y obtener feedback de pronunciación.</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ─────────────────  ACTIVE MODE BAR (back + tabs)  ───────────────── -->
-  <div class="active-mode-bar" id="activeModeBar" style="display:none">
-    <button class="back-btn" onclick="setMode('home')" aria-label="Volver al inicio">
-      <span class="back-arrow">←</span>
-      <span data-i18n="back">Inicio</span>
-    </button>
-    <div class="mode-mini-tabs">
-      <button class="mode-mini-tab" data-mode="preset" onclick="setMode('preset')" data-i18n="modePresetShort">Predefinidas</button>
-      <button class="mode-mini-tab" data-mode="free" onclick="setMode('free')" data-i18n="modeFreeShort">Libre</button>
-      <button class="mode-mini-tab" data-mode="pronunciation" onclick="setMode('pronunciation')" data-i18n="modePronShort">Pronunciación</button>
-    </div>
-  </div>
-
-  <!-- SPEED (only shown when inside a mode) -->
-  <div class="settings-row" id="speedRow" style="display:none">
-    <span class="settings-label" data-i18n="speed">Velocidad:</span>
-    <button class="speed-btn" data-rate="0.6" onclick="setSpeed(0.6)" data-i18n="slow">Lenta</button>
-    <button class="speed-btn active" data-rate="1.0"  onclick="setSpeed(1.0)"  data-i18n="normal">Normal</button>
-    <button class="speed-btn" data-rate="1.4"  onclick="setSpeed(1.4)"  data-i18n="fast">Rápida</button>
-  </div>
-
-  <!-- ─────────────────  MODE: PRESET  ───────────────── -->
-  <section class="mode-section" id="modePreset">
-
-  <!-- PROGRESS -->
-  <div class="progress-wrap">
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-label" id="progressLabel">—</div>
-  </div>
-
-  <!-- MAIN CARD -->
-  <div class="card" id="mainCard">
-    <div class="corner tl"></div>
-    <div class="corner tr"></div>
-    <div class="corner bl"></div>
-    <div class="corner br"></div>
-
-    <div class="topic-tag" id="topicTag"></div>
-    <div class="question-num" id="questionNum"></div>
-    <div class="question-text" id="questionText"></div>
-    <div class="question-translation" id="questionTranslation"></div>
-
-    <div class="btn-row">
-      <button class="btn btn-q" id="btnQ" onclick="speakQuestion()">
-        <span class="btn-icon">&#128266;</span>
-        <span data-i18n="listenQ">Escuchar pregunta</span>
-        <span class="dot"></span>
-      </button>
-      <button class="btn btn-a" id="btnA" onclick="speakAnswer()">
-        <span class="btn-icon">&#128172;</span>
-        <span data-i18n="listenA">Escuchar respuesta</span>
-        <span class="dot"></span>
-      </button>
-      <button class="btn btn-show" onclick="toggleAnswer()">
-        <span class="btn-icon">&#128220;</span>
-        <span id="showBtnText" data-i18n="showA">Ver respuesta</span>
-      </button>
-    </div>
-
-    <div class="answer-box" id="answerBox">
-      <div class="answer-label" data-i18n="answerLabel">Respuesta modelo</div>
-      <div class="answer-text" id="answerText"></div>
-      <div class="answer-translation" id="answerTranslation"></div>
-    </div>
-
-    <!-- RECORDING -->
-    <div class="record-section">
-      <div class="record-label" data-i18n="recordLabel">&#127908; Tu turno — graba tu respuesta</div>
-      <button class="btn-record" id="btnRecord" onclick="toggleRecording()">
-        <span class="mic-dot"></span>
-        <span id="recordBtnText" data-i18n="startRec">Empezar a grabar</span>
-      </button>
-
-      <div class="transcript-box" id="transcriptBox">
-        <div class="t-row">
-          <div class="t-label t-you" data-i18n="youSaidLabel">&#128483; Lo que dijiste</div>
-          <div class="t-content" id="youSaid">—</div>
-        </div>
-        <div class="t-row" id="comparisonRow" style="display:none">
-          <div class="t-label t-correct" data-i18n="correctLabel">&#10003; Respuesta correcta</div>
-          <div class="t-content" id="wordComparison"></div>
-        </div>
-        <div class="t-row" id="tipsRow" style="display:none">
-          <div class="t-label t-tips" data-i18n="tipsLabel">&#128161; Pronunciación</div>
-          <ul class="tips-list" id="tipsList"></ul>
-        </div>
-        <div class="score-wrap" id="scoreWrap" style="display:none">
-          <div class="score-bar-label" data-i18n="scoreLabel">Puntuación</div>
-          <div class="score-bar-outer"><div class="score-bar-inner" id="scoreBar"></div></div>
-          <div class="score-text" id="scoreText"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- COMPLETED -->
-  <div class="card card-completed" id="completedCard" style="display:none">
-    <div class="corner tl"></div>
-    <div class="corner tr"></div>
-    <div class="corner bl"></div>
-    <div class="corner br"></div>
-    <div class="completed-icon">&#127894;</div>
-    <h2 data-i18n="wellDone">¡Misión cumplida!</h2>
-    <p data-i18n="completedText">Has completado todas las preguntas. ¡Sigue practicando!</p>
-    <button class="btn-restart" onclick="restart()" data-i18n="restart">Empezar de nuevo</button>
-  </div>
-
-  <!-- NAV -->
-  <div class="nav-row">
-    <button class="btn-nav" id="btnPrev" onclick="prevQ()" data-i18n="prev">&#8592; Anterior</button>
-    <button class="btn-nav btn-next" id="btnNext" onclick="nextQ()" data-i18n="next">Siguiente &#8594;</button>
-  </div>
-
-  </section>
-  <!-- END MODE: PRESET -->
-
-
-  <!-- ─────────────────  MODE: FREE  ───────────────── -->
-  <section class="mode-section" id="modeFree">
-
-    <div class="card free-card">
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
-
-      <div class="topic-tag" data-i18n="freeTitle">✍️ Speaking Libre</div>
-      <p class="mode-intro" data-i18n="freeIntro">Crea tu propia pregunta y respuesta para practicar lo que quieras.</p>
-
-      <div class="input-group">
-        <label class="input-label" data-i18n="freeQLabel">Tu pregunta (en inglés)</label>
-        <textarea class="input-field" id="freeQuestion" rows="2" placeholder="What is your name?"></textarea>
-      </div>
-
-      <div class="input-group">
-        <label class="input-label" data-i18n="freeALabel">Tu respuesta modelo (en inglés)</label>
-        <textarea class="input-field" id="freeAnswer" rows="3" placeholder="My name is John and I am a Civil Guard."></textarea>
-      </div>
-
-      <button class="btn btn-q btn-full" onclick="loadFreeQuestion()">
-        <span class="btn-icon">▶️</span>
-        <span data-i18n="startPractice">Empezar a practicar</span>
-      </button>
-
-      <!-- Practice area (shown after submitting) -->
-      <div class="free-practice" id="freePractice" style="display:none">
-        <hr class="divider">
-
-        <div class="question-num" data-i18n="yourQ">TU PREGUNTA</div>
-        <div class="question-text" id="freeQuestionText"></div>
-
-        <div class="btn-row">
-          <button class="btn btn-q" id="freeBtnQ" onclick="speakFreeQuestion()">
-            <span class="btn-icon">🔊</span>
-            <span data-i18n="listenQ">Escuchar pregunta</span>
-            <span class="dot"></span>
-          </button>
-          <button class="btn btn-a" id="freeBtnA" onclick="speakFreeAnswer()">
-            <span class="btn-icon">💬</span>
-            <span data-i18n="listenA">Escuchar respuesta</span>
-            <span class="dot"></span>
-          </button>
-          <button class="btn btn-show" onclick="toggleFreeAnswer()">
-            <span class="btn-icon">📜</span>
-            <span id="freeShowText" data-i18n="showA">Ver respuesta</span>
-          </button>
-        </div>
-
-        <div class="answer-box" id="freeAnswerBox">
-          <div class="answer-label" data-i18n="answerLabel">Respuesta modelo</div>
-          <div class="answer-text" id="freeAnswerText"></div>
-        </div>
-
-        <div class="record-section">
-          <div class="record-label" data-i18n="recordLabel">🎤 Tu turno — graba tu respuesta</div>
-          <button class="btn-record" id="freeBtnRecord" onclick="toggleFreeRecording()">
-            <span class="mic-dot"></span>
-            <span id="freeRecordText" data-i18n="startRec">Empezar a grabar</span>
-          </button>
-
-          <div class="transcript-box" id="freeTranscriptBox">
-            <div class="t-row">
-              <div class="t-label t-you" data-i18n="youSaidLabel">🗣 Lo que dijiste</div>
-              <div class="t-content" id="freeYouSaid">—</div>
-            </div>
-            <div class="t-row" id="freeComparisonRow" style="display:none">
-              <div class="t-label t-correct" data-i18n="correctLabel">✓ Respuesta correcta</div>
-              <div class="t-content" id="freeWordComparison"></div>
-            </div>
-            <div class="score-wrap" id="freeScoreWrap" style="display:none">
-              <div class="score-bar-label" data-i18n="scoreLabel">Puntuación</div>
-              <div class="score-bar-outer"><div class="score-bar-inner" id="freeScoreBar"></div></div>
-              <div class="score-text" id="freeScoreText"></div>
-            </div>
-          </div>
-        </div>
-
-        <button class="btn btn-show btn-full" onclick="resetFreeMode()" style="margin-top:18px">
-          <span class="btn-icon">🔄</span>
-          <span data-i18n="newPractice">Nueva práctica</span>
-        </button>
-      </div>
-    </div>
-
-  </section>
-  <!-- END MODE: FREE -->
-
-
-  <!-- ─────────────────  MODE: PRONUNCIATION  ───────────────── -->
-  <section class="mode-section" id="modePronunciation">
-
-    <div class="card pron-card">
-      <div class="corner tl"></div>
-      <div class="corner tr"></div>
-      <div class="corner bl"></div>
-      <div class="corner br"></div>
-
-      <div class="topic-tag" data-i18n="pronTitle">🗣️ Pronunciación</div>
-      <p class="mode-intro" data-i18n="pronIntro">Escribe una palabra o frase en inglés. Te enseñamos cómo pronunciarla y puedes escucharla.</p>
-
-      <div class="input-group">
-        <label class="input-label" data-i18n="pronInputLabel">Palabra o frase en inglés</label>
-        <input type="text" class="input-field" id="pronInput" placeholder="weapon" autocomplete="off" autocapitalize="off" />
-      </div>
-
-      <button class="btn btn-q btn-full" onclick="checkPronunciation()">
-        <span class="btn-icon">🔍</span>
-        <span data-i18n="showPron">Ver pronunciación</span>
-      </button>
-
-      <!-- Pronunciation result -->
-      <div class="pron-result" id="pronResult" style="display:none">
-        <hr class="divider">
-
-        <div class="pron-word" id="pronWord"></div>
-        <div class="pron-phonetic" id="pronPhonetic"></div>
-        <div class="pron-easy" id="pronEasy"></div>
-
-        <div class="btn-row" style="margin-top:18px">
-          <button class="btn btn-q btn-full" id="pronBtnSpeak" onclick="speakPronInput()">
-            <span class="btn-icon">🔊</span>
-            <span data-i18n="listenIt">Escuchar pronunciación</span>
-            <span class="dot"></span>
-          </button>
-        </div>
-
-        <!-- Practice mic -->
-        <div class="record-section">
-          <div class="record-label" data-i18n="practicePron">🎤 Practica pronunciándolo tú</div>
-          <button class="btn-record" id="pronBtnRecord" onclick="togglePronRecording()">
-            <span class="mic-dot"></span>
-            <span id="pronRecordText" data-i18n="startRec">Empezar a grabar</span>
-          </button>
-
-          <div class="transcript-box" id="pronTranscriptBox">
-            <div class="t-row">
-              <div class="t-label t-you" data-i18n="youSaidLabel">🗣 Lo que dijiste</div>
-              <div class="t-content" id="pronYouSaid">—</div>
-            </div>
-            <div class="t-row" id="pronFeedbackRow" style="display:none">
-              <div class="t-label t-correct" id="pronFeedbackLabel"></div>
-              <div class="t-content" id="pronFeedback"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent words -->
-      <div class="pron-recent" id="pronRecent" style="display:none">
-        <div class="record-label" data-i18n="recentWords" style="margin-top:18px">📚 Palabras recientes</div>
-        <div class="pron-recent-list" id="pronRecentList"></div>
-      </div>
-    </div>
-
-  </section>
-  <!-- END MODE: PRONUNCIATION -->
-
-</div>
-
-<!-- FLOATING HELP BUTTON -->
-<button class="help-fab" onclick="showHelpMenu()" aria-label="Help">
-  <span>?</span>
-</button>
-
-<!-- HELP MENU MODAL -->
-<div class="modal-overlay" id="helpMenuModal">
-  <div class="modal modal-error">
-    <button class="modal-close" onclick="closeHelpMenu()" aria-label="Cerrar">×</button>
-    <h3 data-i18n="helpTitle">Ayuda y solución de problemas</h3>
-    <p data-i18n="helpLead">Selecciona el problema que tienes:</p>
-    <div class="help-menu-list">
-      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('mic-not-allowed')">
-        <span class="help-menu-icon">🎤</span>
-        <span class="help-menu-text" data-i18n="helpMic">El micrófono no funciona</span>
-      </button>
-      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('sr-not-supported')">
-        <span class="help-menu-icon">🗣️</span>
-        <span class="help-menu-text" data-i18n="helpSR">No se transcribe mi voz</span>
-      </button>
-      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('sr-network')">
-        <span class="help-menu-icon">📡</span>
-        <span class="help-menu-text" data-i18n="helpNet">Error de red al grabar</span>
-      </button>
-      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('tts-not-supported')">
-        <span class="help-menu-icon">🔊</span>
-        <span class="help-menu-text" data-i18n="helpTTS">No oigo el audio</span>
-      </button>
-      <button class="help-menu-item" onclick="closeHelpMenu(); showErrorHelp('mic-blocked-system')">
-        <span class="help-menu-icon">🔒</span>
-        <span class="help-menu-text" data-i18n="helpSys">Micrófono bloqueado por el sistema</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ERROR HELP MODAL -->
-<div class="modal-overlay" id="errorModal">
-  <div class="modal modal-error">
-    <button class="modal-close" onclick="closeErrorModal()" aria-label="Cerrar">×</button>
-    <h3 id="errorTitle"></h3>
-    <div class="error-browser-tag" id="errorBrowser"></div>
-    <p id="errorLead"></p>
-    <ol class="error-steps" id="errorSteps"></ol>
-    <div class="modal-btns">
-      <button class="modal-btn modal-allow" onclick="closeErrorModal()" data-i18n="understood">Entendido</button>
-    </div>
-  </div>
-</div>
-
-<!-- MIC PERMISSION MODAL -->
-<div class="modal-overlay" id="micModal">
-  <div class="modal">
-    <div class="modal-icon">&#127897;</div>
-    <h3 data-i18n="micTitle">Permiso de micrófono</h3>
-    <p id="micModalText"></p>
-    <div class="modal-btns">
-      <button class="modal-btn modal-cancel" onclick="closeMicModal()" data-i18n="cancel">Cancelar</button>
-      <button class="modal-btn modal-allow" onclick="requestMicPermission()" data-i18n="allow">Permitir</button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <span data-i18n="footer">Desarrollado por el alumno</span> <strong>13123</strong>
-</footer>
-
-<script src="app.js"></script>
 </body>
 </html>
