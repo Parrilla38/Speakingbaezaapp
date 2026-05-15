@@ -1118,7 +1118,8 @@ function FieldArea({ label, mono, value, onChange, placeholder, rows = 3 }) {
         style={{
           width: '100%', resize: 'vertical', border: 'none', outline: 'none',
           fontFamily: 'var(--font-ui)', fontSize: 16, lineHeight: 1.55,
-          background: 'transparent', color: 'var(--ink)', padding: '4px 0'
+          background: 'transparent', color: 'var(--ink)', padding: '4px 0',
+          WebkitTextFillColor: 'var(--ink)',
         }} />
       
     </div>);
@@ -1207,7 +1208,7 @@ function Pronunciation({ go }) {
           <Icon.arrowL s={14} /> Volver al cuartel
         </button>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 32, alignItems: 'start' }}>
+        <div className="pron-layout">
 
           <div>
             <Tag tone="neutral" style={{ marginBottom: 14 }}>MODO III · RÁPIDO</Tag>
@@ -1224,7 +1225,8 @@ function Pronunciation({ go }) {
                 onKeyDown={(e) => e.key === 'Enter' && lookupWord(inputVal)}
                 style={{
                   width: '100%', border: 'none', outline: 'none', background: 'transparent',
-                  fontFamily: 'var(--font-display)', fontSize: 36, padding: '4px 0'
+                  fontFamily: 'var(--font-display)', fontSize: 36, padding: '4px 0',
+                  color: 'var(--ink)', WebkitTextFillColor: 'var(--ink)',
                 }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 14, borderTop: '1px dashed var(--line)' }}>
                 <div className="mono" style={{ fontSize: 10.5, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--olive-soft)' }}>
@@ -1262,7 +1264,7 @@ function Pronunciation({ go }) {
             </div>
           </div>
 
-          <div style={{ background: 'var(--olive)', color: 'var(--cream)', padding: 32, position: 'sticky', top: 80, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+          <div className="pron-result-panel">
             <SectionLabel num="A" style={{ marginBottom: 12, color: 'var(--cream)' }}>Resultado</SectionLabel>
 
             {result ? <>

@@ -447,7 +447,7 @@ function PracticeMin({ go, onResult }) {
         </div>
 
         {/* Question header */}
-        <section style={{
+        <section className="m-q-header" style={{
           display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap',
           padding: '28px 32px', background: 'var(--m-card)', border: '1px solid var(--m-line-strong)',
           marginBottom: 32,
@@ -491,7 +491,7 @@ function PracticeMin({ go, onResult }) {
         </section>
 
         {/* Record section */}
-        <section style={{
+        <section className="m-record-zone" style={{
           padding: '44px 32px',
           background: 'var(--m-accent)',
           color: 'var(--m-bg)',
@@ -557,16 +557,12 @@ function PracticeMin({ go, onResult }) {
 
         {/* Score block */}
         {scoreData && stage === 'scored' && (
-          <section className="fade-enter" style={{
-            display: 'grid', gridTemplateColumns: 'minmax(200px, 260px) 1fr', gap: 32,
-            marginBottom: 36, alignItems: 'start',
-            padding: 28, background: 'var(--m-card)', border: '1px solid var(--m-line-strong)',
-          }}>
+          <section className="fade-enter m-score-grid">
             <div>
               <div className="m-mono" style={{ fontSize: 10.5, letterSpacing: '.22em', textTransform: 'uppercase', color: 'var(--m-muted)', marginBottom: 6 }}>
                 Puntuación
               </div>
-              <div style={{
+              <div className="m-score-big" style={{
                 fontFamily: 'var(--m-font-display)', fontSize: 108, lineHeight: .9,
                 color: 'var(--m-accent)', letterSpacing: '-.04em', fontWeight: 350,
                 fontVariantNumeric: 'tabular-nums',
@@ -713,7 +709,7 @@ function PracticeMin({ go, onResult }) {
           display: 'flex', alignItems: 'center', gap: 12,
           paddingTop: 22, borderTop: '1px solid var(--m-line)',
         }}>
-          <button onClick={handlePrev} style={{
+          <button onClick={handlePrev} className="m-pager-prev" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '14px 18px', background: 'transparent',
             border: '1px solid var(--m-line-strong)',
@@ -731,10 +727,10 @@ function PracticeMin({ go, onResult }) {
             {String(qIdx + 1).padStart(2,'0')} / {String(QUESTIONS.length).padStart(2,'0')}
           </div>
 
-          <button onClick={handleNext} style={{
+          <button onClick={handleNext} className="m-pager-next" style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             padding: '14px 28px',
-            background: 'var(--m-accent)', color: '#fff',
+            background: 'var(--m-accent)', color: 'var(--m-bg)',
             border: '1px solid var(--m-accent)',
             cursor: 'pointer', fontSize: 14, fontWeight: 700,
             fontFamily: 'var(--m-font-ui)', letterSpacing: '.01em',
