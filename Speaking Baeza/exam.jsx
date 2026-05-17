@@ -106,7 +106,7 @@ function ExamIntro({ go, start, questions }) {
 
 /* ════════════════════ RUNNING ════════════════════ */
 function ExamRunning({ go, current, qIdx, total, onNext }) {
-  const sr = useSR();
+  const sr = useSpeech();
   const [timeLeft,     setTimeLeft]     = useState(QUESTION_TIME);
   const [phase,        setPhase]        = useState('idle'); // idle | recording | reviewing
   const [attemptsList, setAttemptsList] = useState([]);

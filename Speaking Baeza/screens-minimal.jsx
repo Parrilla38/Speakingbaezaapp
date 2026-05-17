@@ -334,7 +334,7 @@ function PracticeMin({ go, onResult }) {
   const [srError,    setSrError]    = useState('');
   const [ttsPlaying, setTtsPlaying] = useState(null);
 
-  const sr = useSR();
+  const sr = useSpeech();
   const speedRate = speed === 'Lenta' ? 0.6 : speed === 'Rápida' ? 1.4 : 1.0;
 
   const q = QUESTIONS[qIdx];
@@ -373,6 +373,10 @@ function PracticeMin({ go, onResult }) {
       'not-allowed': '❌ Micrófono denegado. Permite el acceso al micrófono en tu navegador.',
       'network': '❌ Error de red. El reconocimiento de voz necesita conexión a internet.',
       'sr-no-speech': '❌ No se detectó nada. Habla claro e inténtalo de nuevo.',
+      'cloud-not-configured': '❌ Modo Híbrido sin configurar. Añade el endpoint en el panel de Tweaks.',
+      'cloud-failed': '❌ Error al contactar con la nube. Comprueba tu conexión o la API key.',
+      'whisper-failed': '❌ Whisper local falló al transcribir. Inténtalo de nuevo.',
+      'audio-capture': '❌ No se pudo acceder al micrófono.',
     };
     setSrError(msgs[errorCode] || '❌ Error al grabar. Inténtalo de nuevo.');
     setStage('idle');
@@ -398,7 +402,13 @@ function PracticeMin({ go, onResult }) {
   function toggleRecording() {
     if (stage === 'recording') {
       sr.stop(handleFinalize);
-      setStage('idle');
+      // Cloud y Whisper son batch (1-3 s tras stop); mostramos 'processing'
+      // hasta que handleFinalize fija 'scored'. Web SR finaliza casi al instante.
+      const isBatch = sr.engine === 'whisper' || sr.engine === 'cloud';
+      setStage(isBatch ? 'processing' : 'idle');
+    } else if (stage === 'processing') {
+      // Mientras transcribe, evitamos reentrada.
+      return;
     } else {
       setSrError('');
       setTranscript('');
@@ -517,7 +527,9 @@ function PracticeMin({ go, onResult }) {
             onClick={toggleRecording}
             className="m-record"
             data-active={stage === 'recording'}
-            title={stage === 'recording' ? 'Parar grabación' : 'Empezar a grabar'}
+            disabled={stage === 'processing'}
+            style={stage === 'processing' ? { opacity: .55, cursor: 'wait' } : null}
+            title={stage === 'recording' ? 'Parar grabación' : stage === 'processing' ? 'Transcribiendo…' : 'Empezar a grabar'}
           >
             <Icon.mic s={36} />
           </button>
@@ -539,7 +551,12 @@ function PracticeMin({ go, onResult }) {
             fontSize: 10.5, letterSpacing: '.22em', textTransform: 'uppercase',
             color: 'rgba(255,255,255,.7)',
           }}>
-            {stage === 'recording' ? '🎤 Escuchando… habla ahora'
+            {sr.recState === 'loading' ? '⏳ Cargando modelo Whisper…'
+              : stage === 'processing' ? (sr.engine === 'cloud' ? '☁️ Transcribiendo en la nube…' : '⏳ Transcribiendo…')
+              : stage === 'recording' ? (
+                  sr.engine === 'whisper' ? '🎤 Grabando (modo offline)…'
+                  : sr.engine === 'cloud' ? '🎤 Grabando · transcripción precisa al parar'
+                  : '🎤 Escuchando… habla ahora')
               : stage === 'scored' ? 'Listo · pulsa para repetir'
               : sr.isSupported ? 'Pulsa el micrófono para empezar'
               : '⚠️ Reconocimiento de voz no disponible en este navegador'}

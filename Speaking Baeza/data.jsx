@@ -894,10 +894,595 @@ function useSR() {
   };
 }
 
+/* ════════════════════ WHISPER (transformers.js) ════════════════════ */
+/*
+ * Reconocimiento de voz local con Whisper a través de transformers.js.
+ * Modo "preciso": graba con MediaRecorder, resamplea a 16 kHz mono y
+ * transcribe en el navegador con WASM/WebGPU. No hay transcripción en vivo
+ * (Whisper es batch); compensamos con un waveform y un estado de
+ * "Transcribiendo…" tras detener.
+ *
+ *  - Lazy-load: solo descarga ~75 MB (whisper-base.en cuantizado) cuando
+ *    el usuario activa el modo y pulsa el micrófono por primera vez.
+ *  - Progreso de descarga emitido como `CustomEvent('spk:whisper-progress')`
+ *    para que la UI muestre %.
+ *  - Pipeline cacheado en módulo: una sola descarga por sesión.
+ */
+
+const SPK_WHISPER_DEFAULT_MODEL = 'Xenova/whisper-base.en';
+const SPK_TRANSFORMERS_URL      = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+// Soporte: necesitamos getUserMedia + Web Audio + WASM.
+const WHISPER_SUPPORTED = !!(
+  navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+  (window.AudioContext || window.webkitAudioContext) &&
+  typeof WebAssembly !== 'undefined'
+);
+
+let _whisperPipeline = null;     // cache del modelo cargado
+let _whisperLoading  = null;     // promesa en vuelo (evita doble descarga)
+let _whisperModelId  = null;     // id del modelo cacheado
+
+// Babel-standalone transforma `import()` a require; envolverlo en Function
+// preserva el dynamic-import nativo del navegador.
+const _nativeImport = (url) => (new Function('u', 'return import(u)'))(url);
+
+function _emitWhisperEvent(name, detail) {
+  try { window.dispatchEvent(new CustomEvent(name, { detail })); } catch(_) {}
+}
+
+async function _loadWhisper(modelId) {
+  modelId = modelId || window.__SPK_WHISPER_MODEL || SPK_WHISPER_DEFAULT_MODEL;
+  if (_whisperPipeline && _whisperModelId === modelId) return _whisperPipeline;
+  if (_whisperLoading) return _whisperLoading;
+
+  _whisperLoading = (async () => {
+    _emitWhisperEvent('spk:whisper-progress', { status: 'loading-lib' });
+    const tf = await _nativeImport(SPK_TRANSFORMERS_URL);
+    // Forzamos cache de modelos en navegador (IndexedDB) y desactivamos
+    // el fallback a archivos locales que no existen en este despliegue.
+    tf.env.allowLocalModels = false;
+    tf.env.useBrowserCache  = true;
+
+    const pipe = await tf.pipeline('automatic-speech-recognition', modelId, {
+      quantized: true,
+      progress_callback: (p) => _emitWhisperEvent('spk:whisper-progress', p),
+    });
+    _whisperPipeline = pipe;
+    _whisperModelId  = modelId;
+    _emitWhisperEvent('spk:whisper-progress', { status: 'ready' });
+    return pipe;
+  })().catch((err) => {
+    _whisperLoading = null;
+    _emitWhisperEvent('spk:whisper-progress', { status: 'error', message: String(err) });
+    throw err;
+  });
+
+  return _whisperLoading;
+}
+
+async function _blobToFloat32Mono16k(blob) {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const audioCtx = new Ctx();
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+    const targetSR    = 16000;
+    const length      = Math.max(1, Math.ceil(audioBuffer.duration * targetSR));
+    const offline     = new OfflineAudioContext(1, length, targetSR);
+    const src         = offline.createBufferSource();
+    src.buffer        = audioBuffer;
+    src.connect(offline.destination);
+    src.start(0);
+    const rendered = await offline.startRendering();
+    return rendered.getChannelData(0);
+  } finally {
+    try { audioCtx.close(); } catch(_) {}
+  }
+}
+
+function _pickRecorderMime() {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/ogg;codecs=opus',
+    'audio/mp4',
+  ];
+  for (const m of candidates) {
+    if (MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) return m;
+  }
+  return '';
+}
+
+function useWhisperSR() {
+  const { useState, useEffect, useRef } = React;
+
+  const streamRef   = useRef(null);
+  const recRef      = useRef(null);
+  const chunksRef   = useRef([]);
+  // genId aumenta en cada start()/reset(); permite abortar transcripciones
+  // en vuelo cuando el usuario cancela o cambia de pregunta.
+  const stateRef    = useRef({ isRecording: false, finalized: false, finalizeMs: 1500, genId: 0 });
+  const cbRef       = useRef({ onFinalize: null, onError: null });
+
+  const [liveText, setLiveText] = useState('');
+  // idle | loading | listening | processing | error
+  const [recState, setRecState] = useState('idle');
+
+  function _cleanupStream() {
+    if (recRef.current) {
+      try { recRef.current.ondataavailable = null; recRef.current.onstop = null; } catch(_) {}
+      recRef.current = null;
+    }
+    if (streamRef.current) {
+      try { streamRef.current.getTracks().forEach(t => t.stop()); } catch(_) {}
+      streamRef.current = null;
+    }
+    chunksRef.current = [];
+  }
+
+  function reset() {
+    stateRef.current = {
+      isRecording: false, finalized: true, finalizeMs: 1500,
+      genId: (stateRef.current.genId || 0) + 1,
+    };
+    _cleanupStream();
+    setLiveText('');
+    setRecState('idle');
+  }
+
+  async function _transcribeAndFinalize() {
+    if (stateRef.current.finalized) return;
+    stateRef.current.finalized = true;
+    const gen = stateRef.current.genId;
+
+    const blob = new Blob(chunksRef.current, { type: chunksRef.current[0]?.type || 'audio/webm' });
+    _cleanupStream();
+
+    if (!blob.size) {
+      if (gen !== stateRef.current.genId) return;
+      setLiveText('');
+      setRecState('idle');
+      if (cbRef.current.onFinalize) cbRef.current.onFinalize('');
+      return;
+    }
+
+    setRecState('processing');
+    setLiveText('Transcribiendo…');
+
+    try {
+      const pipe  = await _loadWhisper();
+      const audio = await _blobToFloat32Mono16k(blob);
+      // chunk_length_s=30 cubre respuestas largas; stride da contexto entre chunks.
+      const out = await pipe(audio, {
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        language: 'english',
+        task: 'transcribe',
+      });
+      // Si entre tanto el usuario canceló o reinició, descartamos el resultado.
+      if (gen !== stateRef.current.genId) return;
+      const text = _normalizeFinal((out && out.text) || '');
+      setLiveText(text);
+      setRecState('idle');
+      if (cbRef.current.onFinalize) cbRef.current.onFinalize(text);
+    } catch (err) {
+      if (gen !== stateRef.current.genId) return;
+      console.warn('Whisper transcribe:', err);
+      setRecState('error');
+      if (cbRef.current.onError) cbRef.current.onError('whisper-failed');
+    }
+  }
+
+  async function start(onFinalize, onError, opts) {
+    if (!WHISPER_SUPPORTED) {
+      if (onError) onError('sr-not-supported');
+      return false;
+    }
+    cbRef.current.onFinalize = onFinalize;
+    cbRef.current.onError    = onError;
+    stateRef.current = {
+      isRecording: true,
+      finalized:   false,
+      finalizeMs:  (opts && opts.finalizeMs) || 1500,
+      genId:       (stateRef.current.genId || 0) + 1,
+    };
+    setLiveText('');
+    setRecState('loading');
+
+    // Lanzamos la carga del modelo en paralelo a la petición de micrófono.
+    // Si el modelo ya está cacheado, esto resuelve al instante.
+    _loadWhisper().catch(() => {});
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl:  true,
+        },
+      });
+      streamRef.current = stream;
+
+      const mime = _pickRecorderMime();
+      const rec  = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      recRef.current = rec;
+      chunksRef.current = [];
+
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop          = () => { _transcribeAndFinalize(); };
+      rec.start(250); // chunks cada 250 ms
+
+      setRecState('listening');
+      return true;
+    } catch (err) {
+      const name = (err && err.name) || '';
+      const code = name === 'NotAllowedError' ? 'not-allowed'
+                 : name === 'NotFoundError'   ? 'audio-capture'
+                 : 'whisper-failed';
+      stateRef.current.isRecording = false;
+      _cleanupStream();
+      setRecState('error');
+      if (onError) onError(code);
+      return false;
+    }
+  }
+
+  function stop(onFinalize) {
+    if (onFinalize) cbRef.current.onFinalize = onFinalize;
+    if (!stateRef.current.isRecording) return;
+    stateRef.current.isRecording = false;
+    try { recRef.current && recRef.current.state === 'recording' && recRef.current.stop(); }
+    catch(_) { _transcribeAndFinalize(); }
+  }
+
+  useEffect(() => () => { reset(); }, []);
+
+  return {
+    liveText, recState,
+    start, stop, reset,
+    isSupported: WHISPER_SUPPORTED,
+    engine:      'whisper',
+    browser:     { IS_IOS, IS_SAFARI, IS_FIREFOX, IS_EDGE, IS_CHROME, IS_ANDROID, IS_BRAVE },
+  };
+}
+
+/* ════════════════════ GROQ / CLOUD STT ════════════════════ */
+/*
+ * Transcripción en la nube vía Groq (Whisper-large-v3-turbo).
+ * Dos modos de configuración:
+ *   - Producción: `spk.sttBackendUrl` apunta a un Cloudflare Worker que
+ *     inyecta la API key server-side. El cliente no manda Authorization.
+ *   - Desarrollo: `spk.sttBackendUrl = https://api.groq.com/openai/v1/audio/transcriptions`
+ *     + `spk.sttBackendKey = gsk_...`. La key vive en localStorage del
+ *     dispositivo; vale para probar pero no para producción.
+ *
+ * Combinado con useSR (Web Speech) en el modo 'cloud' da:
+ *   - Transcripción en vivo durante la grabación (Web Speech)
+ *   - Texto final pulido para puntuar (Groq Whisper-large)
+ *
+ * El audio se sube tal cual lo emite MediaRecorder (webm/opus o mp4/aac).
+ * Groq acepta ambos formatos sin conversión.
+ */
+
+const SPK_GROQ_DEFAULT_URL   = 'https://api.groq.com/openai/v1/audio/transcriptions';
+const SPK_GROQ_DEFAULT_MODEL = 'whisper-large-v3-turbo';
+
+/* ────────────────────────────────────────────────────────────────
+ * CONFIGURACIÓN PÚBLICA DEL PROYECTO  ·  Netlify
+ *
+ * SPK_PUBLIC_CLOUD_URL: endpoint del proxy STT en producción.
+ *   - '/api/transcribe' → Netlify Function (netlify/functions/transcribe.js).
+ *     Relativa → funciona en cualquier dominio de Netlify sin tocar nada.
+ *   - Es público y seguro en GitHub. La API key NUNCA vive aquí: se inyecta
+ *     en la función desde las variables de entorno de Netlify.
+ *   - Si pruebas en local sin la función (cloudflared/LAN), apunta el panel
+ *     de Tweaks a Groq directo y pega tu key (solo se guarda en localStorage).
+ *
+ * SPK_PUBLIC_DEFAULT_ENGINE: motor por defecto al abrir la app por primera vez.
+ *   - 'cloud'  → Híbrido (Web Speech live + Netlify Function para puntuar).
+ *   - 'web'    → Solo Web Speech (sin servidor, menor precisión).
+ *   - 'whisper'→ Whisper local (offline, descarga 75 MB la primera vez).
+ *   El usuario puede sobreescribirlo desde el panel de Tweaks;
+ *   la elección se guarda en localStorage del dispositivo.
+ * ────────────────────────────────────────────────────────────────*/
+const SPK_PUBLIC_CLOUD_URL      = '/api/transcribe';
+const SPK_PUBLIC_DEFAULT_ENGINE = 'cloud';
+
+function _readGroqConfig() {
+  try {
+    return {
+      // El override en localStorage tiene prioridad; en su defecto, la URL
+      // pública del proyecto (Worker desplegado y commiteado en GitHub).
+      url:   localStorage.getItem('spk.sttBackendUrl') || SPK_PUBLIC_CLOUD_URL || '',
+      key:   localStorage.getItem('spk.sttBackendKey') || '',
+      model: localStorage.getItem('spk.sttBackendModel') || SPK_GROQ_DEFAULT_MODEL,
+    };
+  } catch(_) { return { url: SPK_PUBLIC_CLOUD_URL || '', key: '', model: SPK_GROQ_DEFAULT_MODEL }; }
+}
+
+function setCloudSTTConfig({ url, key, model }) {
+  try {
+    if (url   != null) localStorage.setItem('spk.sttBackendUrl',   url);
+    if (key   != null) localStorage.setItem('spk.sttBackendKey',   key);
+    if (model != null) localStorage.setItem('spk.sttBackendModel', model);
+  } catch(_) {}
+  try { window.dispatchEvent(new CustomEvent('spk:cloud-config-change')); } catch(_) {}
+}
+
+async function _uploadToGroq(blob, { url, key, model, signal }) {
+  const fd = new FormData();
+  const ext = (blob.type || '').includes('mp4') ? 'm4a' : 'webm';
+  fd.append('file', blob, `audio.${ext}`);
+  fd.append('model', model || SPK_GROQ_DEFAULT_MODEL);
+  fd.append('language', 'en');
+  fd.append('response_format', 'json');
+  // Temperature 0 → determinístico; mejor para puntuación reproducible.
+  fd.append('temperature', '0');
+
+  const headers = {};
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+
+  const res = await fetch(url, { method: 'POST', body: fd, headers, signal });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Cloud STT ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const j = await res.json();
+  return (j && (j.text || j.transcription)) || '';
+}
+
+const CLOUD_SUPPORTED = !!(
+  navigator.mediaDevices && navigator.mediaDevices.getUserMedia &&
+  typeof MediaRecorder !== 'undefined' && typeof fetch !== 'undefined'
+);
+
+function useGroqSR() {
+  const { useState, useEffect, useRef } = React;
+
+  const streamRef = useRef(null);
+  const recRef    = useRef(null);
+  const chunksRef = useRef([]);
+  const abortRef  = useRef(null);
+  const stateRef  = useRef({ isRecording: false, finalized: false, genId: 0 });
+  const cbRef     = useRef({ onFinalize: null, onError: null });
+
+  const [liveText, setLiveText] = useState('');
+  // idle | listening | processing | error
+  const [recState, setRecState] = useState('idle');
+
+  function _cleanupStream() {
+    if (recRef.current) {
+      try { recRef.current.ondataavailable = null; recRef.current.onstop = null; } catch(_) {}
+      recRef.current = null;
+    }
+    if (streamRef.current) {
+      try { streamRef.current.getTracks().forEach(t => t.stop()); } catch(_) {}
+      streamRef.current = null;
+    }
+    chunksRef.current = [];
+  }
+
+  function reset() {
+    if (abortRef.current) { try { abortRef.current.abort(); } catch(_) {} abortRef.current = null; }
+    stateRef.current = {
+      isRecording: false, finalized: true,
+      genId: (stateRef.current.genId || 0) + 1,
+    };
+    _cleanupStream();
+    setLiveText('');
+    setRecState('idle');
+  }
+
+  async function _uploadAndFinalize() {
+    if (stateRef.current.finalized) return;
+    stateRef.current.finalized = true;
+    const gen = stateRef.current.genId;
+
+    const blob = new Blob(chunksRef.current, { type: chunksRef.current[0]?.type || 'audio/webm' });
+    _cleanupStream();
+
+    if (!blob.size) {
+      if (gen !== stateRef.current.genId) return;
+      setRecState('idle');
+      if (cbRef.current.onFinalize) cbRef.current.onFinalize('');
+      return;
+    }
+
+    const cfg = _readGroqConfig();
+    if (!cfg.url) {
+      setRecState('error');
+      if (cbRef.current.onError) cbRef.current.onError('cloud-not-configured');
+      return;
+    }
+
+    setRecState('processing');
+    setLiveText('Transcribiendo en la nube…');
+    abortRef.current = new AbortController();
+
+    try {
+      const text = _normalizeFinal(await _uploadToGroq(blob, { ...cfg, signal: abortRef.current.signal }));
+      if (gen !== stateRef.current.genId) return;
+      setLiveText(text);
+      setRecState('idle');
+      if (cbRef.current.onFinalize) cbRef.current.onFinalize(text);
+    } catch (err) {
+      if (gen !== stateRef.current.genId) return;
+      console.warn('Cloud STT:', err);
+      setRecState('error');
+      if (cbRef.current.onError) cbRef.current.onError('cloud-failed');
+    } finally {
+      abortRef.current = null;
+    }
+  }
+
+  async function start(onFinalize, onError) {
+    if (!CLOUD_SUPPORTED) {
+      if (onError) onError('sr-not-supported');
+      return false;
+    }
+    const cfg = _readGroqConfig();
+    if (!cfg.url) {
+      if (onError) onError('cloud-not-configured');
+      return false;
+    }
+
+    cbRef.current.onFinalize = onFinalize;
+    cbRef.current.onError    = onError;
+    stateRef.current = {
+      isRecording: true, finalized: false,
+      genId: (stateRef.current.genId || 0) + 1,
+    };
+    setLiveText('');
+    setRecState('listening');
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl:  true,
+        },
+      });
+      streamRef.current = stream;
+
+      const mime = _pickRecorderMime();
+      const rec  = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+      recRef.current = rec;
+      chunksRef.current = [];
+
+      rec.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data); };
+      rec.onstop          = () => { _uploadAndFinalize(); };
+      rec.start(250);
+      return true;
+    } catch (err) {
+      const name = (err && err.name) || '';
+      const code = name === 'NotAllowedError' ? 'not-allowed'
+                 : name === 'NotFoundError'   ? 'audio-capture'
+                 : 'cloud-failed';
+      stateRef.current.isRecording = false;
+      _cleanupStream();
+      setRecState('error');
+      if (onError) onError(code);
+      return false;
+    }
+  }
+
+  function stop(onFinalize) {
+    if (onFinalize) cbRef.current.onFinalize = onFinalize;
+    if (!stateRef.current.isRecording) return;
+    stateRef.current.isRecording = false;
+    try { recRef.current && recRef.current.state === 'recording' && recRef.current.stop(); }
+    catch(_) { _uploadAndFinalize(); }
+  }
+
+  useEffect(() => () => { reset(); }, []);
+
+  return {
+    liveText, recState,
+    start, stop, reset,
+    isSupported: CLOUD_SUPPORTED && !!_readGroqConfig().url,
+    engine:      'cloud',
+    browser:     { IS_IOS, IS_SAFARI, IS_FIREFOX, IS_EDGE, IS_CHROME, IS_ANDROID, IS_BRAVE },
+  };
+}
+
+/* ════════════════════ useSpeech wrapper ════════════════════ */
+/*
+ * Único punto de consumo para los screens. Lee la preferencia de motor
+ * (`localStorage['spk.sttEngine']` = 'web' | 'whisper') y devuelve el hook
+ * correspondiente. Ambos hooks corren en paralelo (regla de hooks); solo
+ * el seleccionado se devuelve, así que el otro queda inactivo.
+ */
+
+const SPK_VALID_ENGINES = ['web', 'cloud', 'whisper'];
+
+function _readSpeechEngine() {
+  try {
+    const v = localStorage.getItem('spk.sttEngine');
+    if (SPK_VALID_ENGINES.includes(v)) return v;
+  } catch(_) {}
+  return SPK_VALID_ENGINES.includes(SPK_PUBLIC_DEFAULT_ENGINE) ? SPK_PUBLIC_DEFAULT_ENGINE : 'web';
+}
+
+function setSpeechEngine(engine) {
+  const v = SPK_VALID_ENGINES.includes(engine) ? engine : 'web';
+  try { localStorage.setItem('spk.sttEngine', v); } catch(_) {}
+  try { window.dispatchEvent(new CustomEvent('spk:engine-change', { detail: { engine: v } })); } catch(_) {}
+}
+
+/*
+ * Modo 'cloud' = híbrido: Web Speech corre en paralelo para feedback en
+ * vivo (`liveText`), pero el texto final que se entrega al consumidor viene
+ * de Groq Whisper-large-v3-turbo. Si Web Speech falla (Firefox/iOS), el
+ * usuario igualmente recibe la transcripción final de la nube.
+ */
+function _buildHybrid(webSR, groqSR) {
+  return {
+    // liveText: preferimos Web Speech (en vivo) durante la grabación; si la
+    // nube ya está transcribiendo, mostramos su placeholder/resultado.
+    get liveText() {
+      if (groqSR.recState === 'processing') return groqSR.liveText;
+      return webSR.liveText || '';
+    },
+    // recState: el ciclo de vida real lo marca Groq (incluye 'processing').
+    get recState() { return groqSR.recState; },
+    get isSupported() { return groqSR.isSupported; },
+    engine: 'cloud',
+    browser: groqSR.browser,
+    start(onFinalize, onError, opts) {
+      // Lanzamos Web Speech "fire and forget" para que pinte texto en vivo;
+      // su finalize lo descartamos. Si no es soportado, no pasa nada.
+      try { webSR.start(() => {}, () => {}, opts); } catch(_) {}
+      return groqSR.start(onFinalize, onError, opts);
+    },
+    stop(onFinalize) {
+      try { webSR.stop(null); } catch(_) {}
+      groqSR.stop(onFinalize);
+    },
+    reset() {
+      try { webSR.reset(); } catch(_) {}
+      groqSR.reset();
+    },
+  };
+}
+
+function useSpeech() {
+  const { useState, useEffect } = React;
+  const [engine, setEngine] = useState(_readSpeechEngine);
+
+  useEffect(() => {
+    const onChange = () => setEngine(_readSpeechEngine());
+    const onCfg    = () => setEngine(_readSpeechEngine()); // re-render al cambiar URL/key
+    window.addEventListener('spk:engine-change', onChange);
+    window.addEventListener('spk:cloud-config-change', onCfg);
+    return () => {
+      window.removeEventListener('spk:engine-change', onChange);
+      window.removeEventListener('spk:cloud-config-change', onCfg);
+    };
+  }, []);
+
+  // Los tres hooks deben llamarse incondicionalmente.
+  const webSR     = useSR();
+  const whisperSR = useWhisperSR();
+  const groqSR    = useGroqSR();
+
+  if (engine === 'whisper' && whisperSR.isSupported) return whisperSR;
+  if (engine === 'cloud'   && groqSR.isSupported)    return _buildHybrid(webSR, groqSR);
+  return Object.assign({}, webSR, { engine: 'web' });
+}
+
 /* expose */
 Object.assign(window, {
   QUESTIONS, HINTS, STOP_WORDS,
   normText, calcScore, levenshtein,
   buildEasyPron, buildPhonetic,
-  ttsSpeak, ttsStop, useSR, SR_API,
+  ttsSpeak, ttsStop,
+  useSR, SR_API,
+  useWhisperSR, useGroqSR, useSpeech,
+  setSpeechEngine, setCloudSTTConfig,
+  WHISPER_SUPPORTED, CLOUD_SUPPORTED,
 });

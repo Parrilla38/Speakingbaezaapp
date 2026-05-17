@@ -1,0 +1,23 @@
+# Netlify config · Speaking Baeza
+#
+# Sitio estático (sin build step): publicamos directamente la carpeta
+# "Speaking Baeza/", y las funciones serverless viven en netlify/functions/.
+
+[build]
+  publish   = "Speaking Baeza"
+  functions = "netlify/functions"
+  # Sin comando de build — todos los .jsx se compilan en el navegador con
+  # Babel Standalone (cargado desde CDN en index.html).
+  command   = ""
+
+[functions]
+  # Runtime moderno (Web APIs estándar: Request, Response, FormData).
+  node_bundler = "esbuild"
+
+# Cabeceras útiles para que transformers.js (modo Whisper local) pueda usar
+# SharedArrayBuffer y acelerar la inferencia con WASM multithread.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy   = "same-origin"
+    Cross-Origin-Embedder-Policy = "credentialless"

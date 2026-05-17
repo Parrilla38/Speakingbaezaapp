@@ -752,7 +752,7 @@ function FreeSpeaking({ go, onResult }) {
   const [showAnswer, setShowAnswer] = useState(false);
   const [speed, setSpeed] = useState('Normal');
   const [ttsPlaying, setTtsPlaying] = useState(null);
-  const sr = useSR();
+  const sr = useSpeech();
   const scoreRef = React.useRef(null);
 
   const speedRate = speed === 'Lenta' ? 0.6 : speed === 'Rápida' ? 1.4 : 1.0;
@@ -1137,7 +1137,7 @@ function Pronunciation({ go }) {
   const [srError, setSrError] = useState('');
   const [recentWords, setRecentWords] = useState([]);
   const [ttsActive, setTtsActive] = useState(false);
-  const sr = useSR();
+  const sr = useSpeech();
 
   React.useEffect(() => {
     try {

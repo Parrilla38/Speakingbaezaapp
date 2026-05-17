@@ -1,0 +1,19 @@
+# Herramientas locales de desarrollo (cloudflared.exe, scripts de servidor)
+.serve-tools/
+
+# Archivos de secretos — NUNCA subir
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*~

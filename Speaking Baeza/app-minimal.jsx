@@ -16,6 +16,37 @@ function AppMin(){
   const [screen, setScreen]     = React.useState(t.screen || 'home');
   const [help, setHelp]         = React.useState(false);
 
+  // Motor de reconocimiento de voz: 'web' (rápido) | 'cloud' (híbrido) | 'whisper' (offline).
+  const [sttEngine, setSttEngineState] = React.useState(() => {
+    try {
+      const v = localStorage.getItem('spk.sttEngine');
+      return ['web','cloud','whisper'].includes(v) ? v : 'web';
+    } catch(_) { return 'web'; }
+  });
+  const switchSttEngine = (v) => {
+    setSttEngineState(v);
+    if (typeof setSpeechEngine === 'function') setSpeechEngine(v);
+  };
+
+  // Config del backend cloud (Groq directo o Cloudflare Worker proxy).
+  const [cloudUrl, setCloudUrl] = React.useState(() => {
+    try { return localStorage.getItem('spk.sttBackendUrl') || ''; } catch(_) { return ''; }
+  });
+  const [cloudKey, setCloudKey] = React.useState(() => {
+    try { return localStorage.getItem('spk.sttBackendKey') || ''; } catch(_) { return ''; }
+  });
+  const persistCloud = (patch) => {
+    if (typeof setCloudSTTConfig === 'function') setCloudSTTConfig(patch);
+  };
+
+  // Progreso de descarga del modelo Whisper para feedback en el panel.
+  const [whisperStatus, setWhisperStatus] = React.useState({ status: 'idle' });
+  React.useEffect(() => {
+    const onProg = (e) => setWhisperStatus(e.detail || { status: 'idle' });
+    window.addEventListener('spk:whisper-progress', onProg);
+    return () => window.removeEventListener('spk:whisper-progress', onProg);
+  }, []);
+
   React.useEffect(()=>{
     history.replaceState({ screen: screen }, '');
     const handler = () => {
@@ -105,6 +136,68 @@ function AppMin(){
 
         <TweakSection label="Progreso">
           <TweakButton label={`Reiniciar progreso (${prog.xp} xp · racha ${prog.streak})`} onClick={()=>{ if(window.confirm('¿Seguro que quieres reiniciar el progreso a cero?')) resetProgress(); }}/>
+        </TweakSection>
+
+        <TweakSection label="Reconocimiento de voz">
+          <TweakSelect
+            label="Motor"
+            value={sttEngine}
+            options={[
+              {value:'web',     label:'Rápido (Web Speech)'},
+              {value:'cloud',   label:'Híbrido (live + Groq)'},
+              {value:'whisper', label:'Offline (Whisper local)'},
+            ]}
+            onChange={switchSttEngine}
+          />
+
+          {sttEngine === 'cloud' && (
+            <>
+              <TweakText
+                label="Endpoint"
+                value={cloudUrl}
+                placeholder="https://...worker.dev/ ó Groq URL"
+                onChange={(v) => { setCloudUrl(v); persistCloud({ url: v }); }}
+              />
+              <TweakText
+                label="API key (dev)"
+                value={cloudKey}
+                placeholder="Solo si endpoint = Groq directo"
+                onChange={(v) => { setCloudKey(v); persistCloud({ key: v }); }}
+              />
+              <div style={{
+                fontSize: 10.5, color: 'rgba(41,38,27,.6)', lineHeight: 1.45,
+                padding: '4px 2px 0',
+              }}>
+                {!cloudUrl
+                  ? '⚠️ Configura un endpoint para usar este modo.'
+                  : cloudUrl.includes('api.groq.com')
+                    ? (cloudKey ? '⚠️ Modo dev: key en localStorage (no para producción)' : '⚠️ Falta API key.')
+                    : '✓ Usando proxy server-side (key oculta)'}
+              </div>
+              <TweakButton
+                label="Usar Groq directo (dev)"
+                secondary
+                onClick={() => {
+                  setCloudUrl('https://api.groq.com/openai/v1/audio/transcriptions');
+                  persistCloud({ url: 'https://api.groq.com/openai/v1/audio/transcriptions' });
+                }}
+              />
+            </>
+          )}
+
+          {sttEngine === 'whisper' && (
+            <div style={{
+              fontSize: 10.5, color: 'rgba(41,38,27,.6)', lineHeight: 1.45,
+              padding: '4px 2px 0',
+            }}>
+              {whisperStatus.status === 'progress' && typeof whisperStatus.progress === 'number'
+                ? `Descargando ${whisperStatus.file || 'modelo'}… ${Math.round(whisperStatus.progress)}%`
+                : whisperStatus.status === 'loading-lib' ? 'Cargando biblioteca…'
+                : whisperStatus.status === 'ready'       ? '✓ Modelo listo (cacheado)'
+                : whisperStatus.status === 'error'       ? '✕ Error al cargar el modelo'
+                : 'Whisper local · primera vez ≈ 75 MB de descarga. Sin transcripción en vivo.'}
+            </div>
+          )}
         </TweakSection>
 
         <TweakSection label="Color">
